@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function uidMatchesPath(uid) {
+      return request.resource.data.uid == uid;
+    }
+
+    function uidIsImmutable() {
+      return request.resource.data.uid == resource.data.uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && uidMatchesPath(uid);
+      allow update: if isOwner(uid)
+                    && resource.data.uid == uid
+                    && uidMatchesPath(uid)
+                    && uidIsImmutable();
+      allow delete: if false;
+
+      match /passages/{passageId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+                      && uidMatchesPath(uid);
+        allow update: if isOwner(uid)
+                      && resource.data.uid == uid
+                      && uidMatchesPath(uid)
+                      && uidIsImmutable();
+        allow delete: if isOwner(uid)
+                      && resource.data.uid == uid;
+      }
+
+      match /vocabulary/{vocabularyId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+                      && uidMatchesPath(uid);
+        allow update: if isOwner(uid)
+                      && resource.data.uid == uid
+                      && uidMatchesPath(uid)
+                      && uidIsImmutable();
+        allow delete: if isOwner(uid)
+                      && resource.data.uid == uid;
+      }
+    }
+  }
+}

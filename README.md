@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VocabsMiner
 
-## Getting Started
+VocabsMiner is a Next.js App Router app that requires Google sign-in (Firebase Auth), extracts academic vocabulary from reading passages via OpenRouter, and stores user-scoped learning history in Firestore.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js 16 + React 19 + TypeScript
+- Firebase Auth + Firestore
+- OpenRouter Chat Completions API
+- ESLint 9 (`pnpm lint`) as the quality gate
+
+## Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+- Firebase project with:
+  - Google provider enabled in Firebase Auth
+  - Firestore database enabled
+- OpenRouter API key
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and set all required variables.
+
+Required groups:
+
+- Firebase client app variables:
+  - `NEXT_PUBLIC_FIREBASE_API_KEY`
+  - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+  - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+  - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+  - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+  - `NEXT_PUBLIC_FIREBASE_APP_ID`
+- Firebase admin variables:
+  - `FIREBASE_PROJECT_ID`
+  - `FIREBASE_CLIENT_EMAIL`
+  - `FIREBASE_PRIVATE_KEY`
+- OpenRouter variables:
+  - `OPENROUTER_API_KEY`
+  - `OPENROUTER_MODEL` (optional, defaults to `openai/gpt-4o-mini`)
+
+## Install and Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+pnpm lint
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App runs at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Core User Flows
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Open `/login` and sign in with Google.
+2. Go to `/dashboard`, paste a passage, and run extraction.
+3. Review extracted words immediately in the results panel.
+4. Open vocabulary bank on dashboard for persisted, deduplicated words.
+5. Open `/dashboard/history` for passage and vocabulary timeline views.
 
-## Learn More
+## API Endpoints
 
-To learn more about Next.js, take a look at the following resources:
+- `POST /api/auth/session`: create session cookie from Firebase ID token.
+- `DELETE /api/auth/session`: clear session cookie.
+- `POST /api/extract`: extract vocabulary from a passage and persist history.
+- `GET /api/vocabulary`: paginated vocabulary list with optional prefix filter.
+- `GET /api/profile/history`: paginated combined passage and vocabulary history.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Protected routes require either:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `Authorization: Bearer <firebase_id_token>`
+- Session cookie set by `/api/auth/session`
 
-## Deploy on Vercel
+## Linting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Run lint before finishing any task:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm lint
+```

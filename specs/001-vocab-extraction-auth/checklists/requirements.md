@@ -1,7 +1,7 @@
-# Specification Quality Checklist: AI Vocabulary Extraction from Reading Passages
+# Specification Quality Checklist: Vocab Extraction Authentication
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-06-12
+**Created**: 2026-06-14
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,7 +31,5 @@
 
 ## Notes
 
-- All items pass. Spec is ready for `/speckit.plan`.
-- 4 user stories cover the full journey: extraction (P1), saving (P2), collection review (P3), authentication (P4).
-- P1 (extraction) intentionally works without authentication, lowering the barrier to first value.
-- Assumptions section documents all v1 scope boundaries explicitly.
+- Initial validation pass: all checklist items passed.
+- Input quote preserves the original user request verbatim for traceability.
