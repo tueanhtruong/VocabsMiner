@@ -16,6 +16,8 @@ export const extractionRequestSchema = z.object({
 
 export const vocabularyItemSchema = z.object({
   word: z.string().trim().min(1),
+  type: z.string().trim().min(1),
+  phonetic: z.string().trim().min(1),
   definition: z.string().trim().min(1),
   context: z.string().trim().min(1),
 });

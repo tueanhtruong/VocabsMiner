@@ -1,8 +1,11 @@
 import { apiError, apiOk } from "@/lib/api/http";
 import { getAuthenticatedUserFromAuthorizationHeader } from "@/lib/auth/session";
 import {
+  addVocabularyToPassage,
+  deleteVocabularyFromPassage,
   getPassageDetailByRecordId,
   listVocabularyCollection,
+  updateVocabularyInPassage,
 } from "@/lib/firebase/firestore-service";
 
 function parseLimit(value: string | null) {
@@ -17,6 +20,14 @@ function parseLimit(value: string | null) {
   }
 
   return parsed;
+}
+
+function parseIndex(value: unknown) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  return value;
 }
 
 export async function GET(request: Request) {
@@ -73,5 +84,183 @@ export async function GET(request: Request) {
     }
 
     return apiError("INTERNAL_ERROR", "Unable to load vocabulary", 500);
+  }
+}
+
+export async function POST(request: Request) {
+  const authenticatedUser = await getAuthenticatedUserFromAuthorizationHeader();
+
+  if (!authenticatedUser) {
+    return apiError("UNAUTHORIZED", "Authentication required", 401);
+  }
+
+  try {
+    const body = await request.json();
+
+    const recordId = body.recordId?.trim();
+    const word = body.word?.trim();
+    const definition = body.definition?.trim();
+    const type = body.type?.trim() || "";
+    const phonetic = body.phonetic?.trim() || "";
+    const context = body.context?.trim() || "";
+
+    if (!recordId) {
+      return apiError("INVALID_INPUT", "recordId is required", 400);
+    }
+
+    if (!word) {
+      return apiError("INVALID_INPUT", "word is required", 400);
+    }
+
+    if (!definition) {
+      return apiError("INVALID_INPUT", "definition is required", 400);
+    }
+
+    const vocabulary = await addVocabularyToPassage({
+      uid: authenticatedUser.uid,
+      recordId,
+      vocabulary: {
+        word,
+        type,
+        phonetic,
+        definition,
+        context,
+      },
+    });
+
+    return apiOk({
+      recordId,
+      vocabulary,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return apiError("NOT_FOUND", "Passage record was not found", 404);
+    }
+
+    if (error instanceof Error && error.message === "INVALID_INPUT") {
+      return apiError("INVALID_INPUT", "Invalid vocabulary data", 400);
+    }
+
+    if (error instanceof SyntaxError) {
+      return apiError("INVALID_INPUT", "Invalid request body", 400);
+    }
+
+    return apiError("INTERNAL_ERROR", "Unable to add vocabulary", 500);
+  }
+}
+
+export async function PUT(request: Request) {
+  const authenticatedUser = await getAuthenticatedUserFromAuthorizationHeader();
+
+  if (!authenticatedUser) {
+    return apiError("UNAUTHORIZED", "Authentication required", 401);
+  }
+
+  try {
+    const body = await request.json();
+
+    const recordId = body.recordId?.trim();
+    const index = parseIndex(body.index);
+    const word = body.word?.trim();
+    const definition = body.definition?.trim();
+    const type = body.type?.trim() || "";
+    const phonetic = body.phonetic?.trim() || "";
+    const context = body.context?.trim() || "";
+
+    if (!recordId) {
+      return apiError("INVALID_INPUT", "recordId is required", 400);
+    }
+
+    if (!word) {
+      return apiError("INVALID_INPUT", "word is required", 400);
+    }
+
+    if (!definition) {
+      return apiError("INVALID_INPUT", "definition is required", 400);
+    }
+
+    const vocabulary = await updateVocabularyInPassage({
+      uid: authenticatedUser.uid,
+      recordId,
+      index,
+      vocabulary: {
+        word,
+        type,
+        phonetic,
+        definition,
+        context,
+      },
+    });
+
+    return apiOk({
+      recordId,
+      index,
+      vocabulary,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message === "NOT_FOUND" || error.message === "ITEM_NOT_FOUND")
+    ) {
+      return apiError("NOT_FOUND", "Vocabulary item was not found", 404);
+    }
+
+    if (error instanceof Error && error.message === "INVALID_INPUT") {
+      return apiError("INVALID_INPUT", "Invalid vocabulary data", 400);
+    }
+
+    if (error instanceof SyntaxError) {
+      return apiError("INVALID_INPUT", "Invalid request body", 400);
+    }
+
+    return apiError("INTERNAL_ERROR", "Unable to update vocabulary", 500);
+  }
+}
+
+export async function DELETE(request: Request) {
+  const authenticatedUser = await getAuthenticatedUserFromAuthorizationHeader();
+
+  if (!authenticatedUser) {
+    return apiError("UNAUTHORIZED", "Authentication required", 401);
+  }
+
+  try {
+    const body = await request.json();
+
+    const recordId = body.recordId?.trim();
+    const index = parseIndex(body.index);
+
+    if (!recordId) {
+      return apiError("INVALID_INPUT", "recordId is required", 400);
+    }
+
+    const deletedVocabulary = await deleteVocabularyFromPassage({
+      uid: authenticatedUser.uid,
+      recordId,
+      index,
+    });
+
+    return apiOk({
+      recordId,
+      index,
+      deletedVocabulary,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message === "NOT_FOUND" || error.message === "ITEM_NOT_FOUND")
+    ) {
+      return apiError("NOT_FOUND", "Vocabulary item was not found", 404);
+    }
+
+    if (error instanceof Error && error.message === "INVALID_INPUT") {
+      return apiError("INVALID_INPUT", "Invalid vocabulary data", 400);
+    }
+
+    if (error instanceof SyntaxError) {
+      return apiError("INVALID_INPUT", "Invalid request body", 400);
+    }
+
+    return apiError("INTERNAL_ERROR", "Unable to delete vocabulary", 500);
   }
 }

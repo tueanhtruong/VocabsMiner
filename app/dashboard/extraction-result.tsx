@@ -1,5 +1,7 @@
 type ExtractionVocabularyItem = {
   word: string;
+  type: string;
+  phonetic: string;
   definition: string;
   context: string;
 };
@@ -45,6 +47,9 @@ export function ExtractionResult({
             <h3 className="text-base font-semibold text-gray-900">
               {item.word}
             </h3>
+            <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">
+              {item.type} {item.phonetic ? `• ${item.phonetic}` : ""}
+            </p>
             <p className="mt-1 text-sm text-gray-700">{item.definition}</p>
             <p className="mt-2 text-xs leading-5 text-gray-500">
               {item.context}

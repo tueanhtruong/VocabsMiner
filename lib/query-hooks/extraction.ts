@@ -6,6 +6,8 @@ import { requestJson } from "@/lib/query-hooks/api-client";
 
 export type ExtractionVocabularyItem = {
   word: string;
+  type: string;
+  phonetic: string;
   definition: string;
   context: string;
 };

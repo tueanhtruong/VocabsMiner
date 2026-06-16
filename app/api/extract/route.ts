@@ -64,69 +64,6 @@ export async function POST(request: Request) {
   const createdAt = Timestamp.now();
 
   try {
-    // const vocabulary = [
-    //   {
-    //     word: "activated",
-    //     definition: "made active or operational",
-    //     context:
-    //       "When a memory of a past experience is not activated for days or months, forgetting tends to occur.",
-    //   },
-    //   {
-    //     word: "erroneous",
-    //     definition: "wrong; incorrect",
-    //     context:
-    //       "Yet it is erroneous to think that memories simply fade over time—the steps involved are far more complex.",
-    //   },
-    //   {
-    //     word: "fade",
-    //     definition: "gradually disappear or lose brightness",
-    //     context:
-    //       "Yet it is erroneous to think that memories simply fade over time—the steps involved are far more complex.",
-    //   },
-    //   {
-    //     word: "complex",
-    //     definition:
-    //       "consisting of many different and connected parts; intricate",
-    //     context:
-    //       "Yet it is erroneous to think that memories simply fade over time—the steps involved are far more complex.",
-    //   },
-    //   {
-    //     word: "auxiliary",
-    //     definition: "providing supplementary or additional help",
-    //     context:
-    //       "In seeking to understand forgetting in the context of memory, such auxiliary phenomena as differences in the rates of forgetting for different kinds of information also must be taken into account.",
-    //   },
-    //   {
-    //     word: "phenomena",
-    //     definition: "observable events or facts (plural of phenomenon)",
-    //     context:
-    //       "In seeking to understand forgetting in the context of memory, such auxiliary phenomena as differences in the rates of forgetting for different kinds of information also must be taken into account.",
-    //   },
-    //   {
-    //     word: "rates",
-    //     definition: "measures of speed, frequency, or quantity",
-    //     context:
-    //       "In seeking to understand forgetting in the context of memory, such auxiliary phenomena as differences in the rates of forgetting for different kinds of information also must be taken into account.",
-    //   },
-    //   {
-    //     word: "context",
-    //     definition: "the circumstances or setting surrounding an event or idea",
-    //     context:
-    //       "In seeking to understand forgetting in the context of memory, such auxiliary phenomena as differences in the rates of forgetting for different kinds of information also must be taken into account.",
-    //   },
-    //   {
-    //     word: "occur",
-    //     definition: "happen; take place",
-    //     context:
-    //       "When a memory of a past experience is not activated for days or months, forgetting tends to occur.",
-    //   },
-    //   {
-    //     word: "taken into account",
-    //     definition: "considered when making a judgment or decision",
-    //     context:
-    //       "In seeking to understand forgetting in the context of memory, such auxiliary phenomena as differences in the rates of forgetting for different kinds of information also must be taken into account.",
-    //   },
-    // ];
     const vocabulary = await extractVocabularyFromPassage(passage);
 
     await recordPassageHistory({

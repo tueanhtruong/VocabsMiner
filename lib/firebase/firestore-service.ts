@@ -29,6 +29,8 @@ export type LearnerProfileDto = {
 
 export type VocabularyItemInput = {
   word: string;
+  type: string;
+  phonetic: string;
   definition: string;
   context: string;
 };
@@ -145,6 +147,16 @@ function resolvePassageTitle(title: string | undefined, passage: string) {
   return fallback || "Untitled passage";
 }
 
+function normalizeVocabularyItem(item: Partial<VocabularyItemInput>) {
+  return {
+    word: (item.word ?? "").trim(),
+    type: (item.type ?? "").trim(),
+    phonetic: (item.phonetic ?? "").trim(),
+    definition: (item.definition ?? "").trim(),
+    context: (item.context ?? "").trim(),
+  } satisfies VocabularyItemInput;
+}
+
 function encodeCursor(payload: Record<string, string | number>) {
   return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
@@ -242,6 +254,10 @@ export async function recordPassageHistory(params: {
   );
   const userRef = getUserDocRef(params.uid);
 
+  const normalizedVocabulary = params.vocabulary.map((item) =>
+    normalizeVocabularyItem(item),
+  );
+
   await getFirebaseAdminFirestore().runTransaction(async (transaction) => {
     transaction.set(
       passageRef,
@@ -251,7 +267,7 @@ export async function recordPassageHistory(params: {
         uid: params.uid,
         title: resolvedTitle,
         passage: params.passageText,
-        vocabularyList: params.vocabulary,
+        vocabularyList: normalizedVocabulary,
         previewText: buildPassagePreview(params.passageText),
         passageHash: hashPassage(params.passageText),
         vocabularyCount: Math.max(params.vocabularyCount, 0),
@@ -625,7 +641,155 @@ export async function getPassageDetailByRecordId(params: {
     recordId: data.recordId ?? snapshot.id,
     title: resolvePassageTitle(data.title, passage),
     passage,
-    vocabularyList: data.vocabularyList ?? [],
+    vocabularyList: (data.vocabularyList ?? []).map((item) =>
+      normalizeVocabularyItem(item),
+    ),
     createdAt: toDateIsoString(data.createdAt),
   } satisfies PassageDetailApiItem;
+}
+
+export async function addVocabularyToPassage(params: {
+  uid: string;
+  recordId: string;
+  vocabulary: VocabularyItemInput;
+}) {
+  const normalizedRecordId = params.recordId.trim();
+
+  if (!normalizedRecordId) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    normalizedRecordId,
+  );
+  const snapshot = await passageRef.get();
+
+  if (!snapshot.exists) {
+    throw new Error("NOT_FOUND");
+  }
+
+  const data = snapshot.data() as PassageHistoryItem;
+  const currentVocabularyList = data.vocabularyList ?? [];
+  const normalizedVocabulary = normalizeVocabularyItem(params.vocabulary);
+
+  if (!normalizedVocabulary.word || !normalizedVocabulary.definition) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  // Add the new vocabulary item at the beginning of the list
+  const updatedVocabularyList = [
+    normalizedVocabulary,
+    ...currentVocabularyList,
+  ];
+
+  // Update the passage with the new vocabulary list
+  await passageRef.update({
+    vocabularyList: updatedVocabularyList,
+    vocabularyCount: updatedVocabularyList.length,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  // Return the normalized vocabulary item for the response
+  return {
+    ...normalizedVocabulary,
+  } satisfies VocabularyItemInput;
+}
+
+export async function updateVocabularyInPassage(params: {
+  uid: string;
+  recordId: string;
+  index: number;
+  vocabulary: VocabularyItemInput;
+}) {
+  const normalizedRecordId = params.recordId.trim();
+
+  if (
+    !normalizedRecordId ||
+    !Number.isInteger(params.index) ||
+    params.index < 0
+  ) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  const normalizedVocabulary = normalizeVocabularyItem(params.vocabulary);
+
+  if (!normalizedVocabulary.word || !normalizedVocabulary.definition) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    normalizedRecordId,
+  );
+  const snapshot = await passageRef.get();
+
+  if (!snapshot.exists) {
+    throw new Error("NOT_FOUND");
+  }
+
+  const data = snapshot.data() as PassageHistoryItem;
+  const currentVocabularyList = data.vocabularyList ?? [];
+
+  if (params.index >= currentVocabularyList.length) {
+    throw new Error("ITEM_NOT_FOUND");
+  }
+
+  const updatedVocabularyList = [...currentVocabularyList];
+  updatedVocabularyList[params.index] = normalizedVocabulary;
+
+  await passageRef.update({
+    vocabularyList: updatedVocabularyList,
+    vocabularyCount: updatedVocabularyList.length,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  return {
+    ...normalizedVocabulary,
+  } satisfies VocabularyItemInput;
+}
+
+export async function deleteVocabularyFromPassage(params: {
+  uid: string;
+  recordId: string;
+  index: number;
+}) {
+  const normalizedRecordId = params.recordId.trim();
+
+  if (
+    !normalizedRecordId ||
+    !Number.isInteger(params.index) ||
+    params.index < 0
+  ) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    normalizedRecordId,
+  );
+  const snapshot = await passageRef.get();
+
+  if (!snapshot.exists) {
+    throw new Error("NOT_FOUND");
+  }
+
+  const data = snapshot.data() as PassageHistoryItem;
+  const currentVocabularyList = data.vocabularyList ?? [];
+
+  if (params.index >= currentVocabularyList.length) {
+    throw new Error("ITEM_NOT_FOUND");
+  }
+
+  const removedItem = currentVocabularyList[params.index];
+  const updatedVocabularyList = currentVocabularyList.filter(
+    (_, index) => index !== params.index,
+  );
+
+  await passageRef.update({
+    vocabularyList: updatedVocabularyList,
+    vocabularyCount: updatedVocabularyList.length,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  return {
+    ...normalizeVocabularyItem(removedItem),
+  } satisfies VocabularyItemInput;
 }

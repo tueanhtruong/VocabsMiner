@@ -84,8 +84,10 @@ Rules:
 - Prefer words useful for IELTS Writing/Reading
 - Return STRICT JSON only - no explanation, no markdown, no extra text
 Output shape:
-{"vocabulary":[{"word":"","definition":"","context":""}]}
+{"vocabulary":[{"word":"","type":"","phonetic":"","definition":"","context":""}]}
 - "word": the word or phrase as it appears
+- "type": part of speech — one of: noun | verb | adjective | adverb | phrase | conjunction | preposition
+- "phonetic": the IPA phonetic transcription
 - "definition": a concise English definition
 - "context": the exact sentence it was used in
 Passage:

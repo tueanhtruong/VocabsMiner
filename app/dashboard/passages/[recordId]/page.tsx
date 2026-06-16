@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { PassagePanel } from "@/app/dashboard/passages/[recordId]/passage-panel";
 import {
@@ -23,6 +23,7 @@ type PassageDetailResponse = {
 export default function PassageDetailPage() {
   const router = useRouter();
   const params = useParams<{ recordId: string }>();
+  const queryClient = useQueryClient();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [isPassageDrawerOpen, setIsPassageDrawerOpen] = useState(false);
 
@@ -37,6 +38,146 @@ export default function PassageDetailPage() {
     },
     enabled: Boolean(params.recordId),
   });
+
+  const handleAddVocabulary = async (formData: {
+    word: string;
+    type: string;
+    phonetic: string;
+    definition: string;
+    context: string;
+  }) => {
+    try {
+      const url = new URL("/api/vocabulary", window.location.origin);
+      const response = await requestJson<{
+        recordId: string;
+        vocabulary: DetailVocabularyItem;
+      }>(url.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: params.recordId,
+          ...formData,
+        }),
+      });
+
+      // Update the cache with the new vocabulary at the top of the list
+      queryClient.setQueryData(
+        ["passage-detail", params.recordId],
+        (oldData: PassageDetailResponse | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            vocabularyList: [response.vocabulary, ...oldData.vocabularyList],
+          };
+        },
+      );
+    } catch (error) {
+      console.error("Failed to add vocabulary:", error);
+      throw error;
+    }
+  };
+
+  const handleUpdateVocabulary = async (
+    index: number,
+    formData: {
+      word: string;
+      type: string;
+      phonetic: string;
+      definition: string;
+      context: string;
+    },
+  ) => {
+    try {
+      const url = new URL("/api/vocabulary", window.location.origin);
+      const response = await requestJson<{
+        recordId: string;
+        index: number;
+        vocabulary: DetailVocabularyItem;
+      }>(url.toString(), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: params.recordId,
+          index,
+          ...formData,
+        }),
+      });
+
+      queryClient.setQueryData(
+        ["passage-detail", params.recordId],
+        (oldData: PassageDetailResponse | undefined) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          const updatedVocabularyList = [...oldData.vocabularyList];
+
+          if (
+            response.index < 0 ||
+            response.index >= updatedVocabularyList.length
+          ) {
+            return oldData;
+          }
+
+          updatedVocabularyList[response.index] = response.vocabulary;
+
+          return {
+            ...oldData,
+            vocabularyList: updatedVocabularyList,
+          };
+        },
+      );
+    } catch (error) {
+      console.error("Failed to update vocabulary:", error);
+      throw error;
+    }
+  };
+
+  const handleDeleteVocabulary = async (index: number) => {
+    const cacheKey = ["passage-detail", params.recordId] as const;
+    const currentData =
+      queryClient.getQueryData<PassageDetailResponse>(cacheKey);
+    const deletedWord = currentData?.vocabularyList[index]?.word ?? null;
+
+    try {
+      const url = new URL("/api/vocabulary", window.location.origin);
+      await requestJson<{
+        recordId: string;
+        index: number;
+        deletedVocabulary: DetailVocabularyItem;
+      }>(url.toString(), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: params.recordId,
+          index,
+        }),
+      });
+
+      queryClient.setQueryData(
+        cacheKey,
+        (oldData: PassageDetailResponse | undefined) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+            vocabularyList: oldData.vocabularyList.filter(
+              (_, itemIndex) => itemIndex !== index,
+            ),
+          };
+        },
+      );
+
+      if (deletedWord && selectedWord === deletedWord) {
+        setSelectedWord(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete vocabulary:", error);
+      throw error;
+    }
+  };
 
   const highlightedPassage = useMemo(() => {
     const passage = detailQuery.data?.passage ?? "";
@@ -168,6 +309,9 @@ export default function PassageDetailPage() {
                 setIsPassageDrawerOpen(true);
               }
             }}
+            onAddVocabulary={handleAddVocabulary}
+            onUpdateVocabulary={handleUpdateVocabulary}
+            onDeleteVocabulary={handleDeleteVocabulary}
           />
         </div>
       </section>
