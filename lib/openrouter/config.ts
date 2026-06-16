@@ -5,7 +5,7 @@ export const openRouterConfig = {
   model: defaultModel,
   requestTimeoutMs: 600_000,
   maxRetryCount: 2,
-  maxPassageLength: 5_000,
+  maxPassageLength: 10_000,
 } as const;
 
 export function getOpenRouterApiKey() {

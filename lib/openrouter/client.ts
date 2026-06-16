@@ -78,7 +78,7 @@ function toOpenRouterError(status: number, bodyText: string) {
 }
 
 function buildExtractionPrompt(passage: string) {
-  return `Extract all academic vocabulary at IELTS Band 5+ level from the passage below.
+  return `Extract all academic vocabulary from the passage below.
 Rules:
 - Include only words/phrases that are academic, formal, or topic-specific (exclude basic everyday words)
 - Prefer words useful for IELTS Writing/Reading

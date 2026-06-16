@@ -13,7 +13,7 @@ import {
   useExtractVocabularyMutation,
 } from "@/lib/query-hooks/extraction";
 
-const maxPassageLength = 5000;
+const maxPassageLength = 10000;
 
 export default function DashboardPage() {
   const [title, setTitle] = useState("");
