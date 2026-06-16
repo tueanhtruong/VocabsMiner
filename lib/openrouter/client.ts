@@ -79,19 +79,15 @@ function toOpenRouterError(status: number, bodyText: string) {
 
 function buildExtractionPrompt(passage: string) {
   return `Extract all academic vocabulary at IELTS Band 5+ level from the passage below.
-
 Rules:
 - Include only words/phrases that are academic, formal, or topic-specific (exclude basic everyday words)
 - Prefer words useful for IELTS Writing/Reading
 - Return STRICT JSON only - no explanation, no markdown, no extra text
-
 Output shape:
 {"vocabulary":[{"word":"","definition":"","context":""}]}
-
 - "word": the word or phrase as it appears
 - "definition": a concise English definition
 - "context": the exact sentence it was used in
-
 Passage:
 """
 ${passage}
@@ -252,7 +248,6 @@ export async function extractVocabularyFromPassage(passage: string) {
         throw providerError;
       }
 
-      console.log(`OpenRouter response: ${rawResponseText.slice(0, 500)}`);
       let parsedResponseJson: unknown;
 
       try {
@@ -265,15 +260,8 @@ export async function extractVocabularyFromPassage(passage: string) {
       }
 
       const responseJson = openRouterResponseSchema.parse(parsedResponseJson);
-      console.log(
-        "🚀 ~ extractVocabularyFromPassage ~ responseJson:",
-        responseJson,
-      );
+
       const rawContent = responseJson.choices[0]?.message.content;
-      console.log(
-        "🚀 ~ extractVocabularyFromPassage ~ rawContent:",
-        rawContent,
-      );
 
       return parseVocabularyFromUnknownContent(rawContent);
     } catch (error) {

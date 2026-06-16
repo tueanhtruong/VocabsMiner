@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { requestJson } from "@/lib/query-hooks/api-client";
 
@@ -35,98 +35,52 @@ type ProfileHistoryResponse = {
   };
 };
 
-type CursorPageParam = {
-  cursor: string | null;
-};
-
 async function getProfileHistoryPage(params: {
-  sectionPageSize: number;
-  passagesCursor?: string | null;
-  vocabularyCursor?: string | null;
+  passagesLimit?: number;
+  vocabularyLimit?: number;
 }) {
   const url = new URL("/api/profile/history", window.location.origin);
-  url.searchParams.set("passagesLimit", String(params.sectionPageSize));
-  url.searchParams.set("vocabularyLimit", String(params.sectionPageSize));
 
-  if (params.passagesCursor) {
-    url.searchParams.set("passagesCursor", params.passagesCursor);
+  if (params.passagesLimit !== undefined) {
+    url.searchParams.set("passagesLimit", String(params.passagesLimit));
   }
 
-  if (params.vocabularyCursor) {
-    url.searchParams.set("vocabularyCursor", params.vocabularyCursor);
+  if (params.vocabularyLimit !== undefined) {
+    url.searchParams.set("vocabularyLimit", String(params.vocabularyLimit));
   }
 
   return requestJson<ProfileHistoryResponse>(url.toString(), { method: "GET" });
 }
 
-export function usePassageHistoryInfiniteQuery(sectionPageSize: number) {
-  return useInfiniteQuery({
-    queryKey: ["history", "passages", sectionPageSize],
-    initialPageParam: { cursor: null } as CursorPageParam,
-    queryFn: ({ pageParam }) =>
-      getProfileHistoryPage({
-        sectionPageSize,
-        passagesCursor: pageParam.cursor,
-      }),
-    getNextPageParam: (lastPage) => ({
-      cursor: lastPage.next.passagesCursor,
-    }),
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map((page) => ({
-        items: page.passages,
-        nextCursor: page.next.passagesCursor,
-      })),
-    }),
+export function usePassageHistoryQuery() {
+  return useQuery({
+    queryKey: ["history", "passages"],
+    queryFn: () => getProfileHistoryPage({}),
+    select: (data) => data.passages,
   });
 }
 
-export function useSidebarPassageHistoryInfiniteQuery(sectionPageSize: number) {
-  return useInfiniteQuery({
-    queryKey: ["history", "sidebar-passages", sectionPageSize],
-    initialPageParam: { cursor: null } as CursorPageParam,
-    queryFn: ({ pageParam }) =>
-      getProfileHistoryPage({
-        sectionPageSize,
-        passagesCursor: pageParam.cursor,
-      }),
-    getNextPageParam: (lastPage) => ({
-      cursor: lastPage.next.passagesCursor,
-    }),
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map((page) => ({
-        items: page.passages.map((item) => ({
+export function useSidebarPassageHistoryQuery() {
+  return useQuery({
+    queryKey: ["history", "passages"],
+    queryFn: () => getProfileHistoryPage({}),
+    select: (data) =>
+      data.passages.map(
+        (item): SidebarPassageHistoryItem => ({
           recordId: item.recordId,
           title: item.title,
           previewText: item.previewText,
           createdAt: item.createdAt,
           vocabularyCount: item.vocabularyCount,
-        })) as SidebarPassageHistoryItem[],
-        nextCursor: page.next.passagesCursor,
-      })),
-    }),
+        }),
+      ),
   });
 }
 
-export function useVocabularyHistoryInfiniteQuery(sectionPageSize: number) {
-  return useInfiniteQuery({
-    queryKey: ["history", "vocabulary", sectionPageSize],
-    initialPageParam: { cursor: null } as CursorPageParam,
-    queryFn: ({ pageParam }) =>
-      getProfileHistoryPage({
-        sectionPageSize,
-        vocabularyCursor: pageParam.cursor,
-      }),
-    getNextPageParam: (lastPage) => ({
-      cursor: lastPage.next.vocabularyCursor,
-    }),
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map((page) => ({
-        items: page.vocabulary,
-        nextCursor: page.next.vocabularyCursor,
-      })),
-    }),
+export function useVocabularyHistoryQuery() {
+  return useQuery({
+    queryKey: ["history", "vocabulary"],
+    queryFn: () => getProfileHistoryPage({}),
+    select: (data) => data.vocabulary,
   });
 }

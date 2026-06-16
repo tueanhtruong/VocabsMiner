@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { HighlightRange } from "@/app/dashboard/passages/[recordId]/highlight-utils";
 
@@ -15,6 +15,8 @@ export function PassagePanel({
   highlightedRanges,
   showNoMatch,
 }: PassagePanelProps) {
+  const firstMatchRef = useRef<HTMLElement | null>(null);
+
   const segments = useMemo(() => {
     if (!highlightedRanges.length) {
       return [{ text: passage, highlighted: false }];
@@ -49,30 +51,57 @@ export function PassagePanel({
     return nextSegments;
   }, [highlightedRanges, passage]);
 
-  return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-5">
-      <h2 className="text-lg font-semibold text-gray-900">Passage</h2>
-      {showNoMatch && selectedWord ? (
-        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          No direct match was found for &quot;{selectedWord}&quot; in this
-          passage.
-        </p>
-      ) : null}
+  useEffect(() => {
+    if (!selectedWord || highlightedRanges.length === 0) {
+      return;
+    }
 
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-gray-700">
-        {segments.map((segment, index) =>
-          segment.highlighted ? (
-            <mark
-              key={`highlight-${index}`}
-              className="rounded bg-yellow-200 px-0.5 text-gray-900"
-            >
-              {segment.text}
-            </mark>
-          ) : (
-            <span key={`segment-${index}`}>{segment.text}</span>
-          ),
-        )}
-      </p>
+    firstMatchRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+  }, [highlightedRanges.length, selectedWord]);
+
+  return (
+    <article className="sticky top-18 self-start rounded-2xl border border-gray-200 bg-white p-5 lg:max-h-[calc(100vh-4.5rem)]">
+      <h2 className="text-lg font-semibold text-gray-900">Passage</h2>
+
+      <div className="mt-3 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
+        {showNoMatch && selectedWord ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            No direct match was found for &quot;{selectedWord}&quot; in this
+            passage.
+          </p>
+        ) : null}
+
+        <p
+          className={`whitespace-pre-wrap text-sm leading-7 text-gray-700 ${showNoMatch && selectedWord ? "mt-3" : ""}`}
+        >
+          {(() => {
+            let highlightedIndex = 0;
+
+            return segments.map((segment, index) => {
+              if (!segment.highlighted) {
+                return <span key={`segment-${index}`}>{segment.text}</span>;
+              }
+
+              const shouldAttachRef = highlightedIndex === 0;
+              highlightedIndex += 1;
+
+              return (
+                <mark
+                  key={`highlight-${index}`}
+                  className="rounded bg-yellow-200 px-0.5 text-gray-900"
+                  ref={shouldAttachRef ? firstMatchRef : null}
+                >
+                  {segment.text}
+                </mark>
+              );
+            });
+          })()}
+        </p>
+      </div>
     </article>
   );
 }

@@ -10,7 +10,7 @@ export type LearnerProfile = {
   uid: string;
   email?: string;
   displayName?: string;
-  photoURL?: string;
+  photoUrl?: string;
   provider: "google.com";
   preferredTarget: string;
   totalPassages: number;
@@ -86,11 +86,11 @@ export type PassageDetailApiItem = {
   createdAt: string;
 };
 
-const defaultVocabularyLimit = 20;
-const maxVocabularyLimit = 100;
+const defaultVocabularyLimit = 500;
+const maxVocabularyLimit = 1000;
 
-const defaultHistoryLimit = 20;
-const maxHistoryLimit = 50;
+const defaultHistoryLimit = 500;
+const maxHistoryLimit = 1000;
 
 export function getUserDocRef(uid: string) {
   return getFirebaseAdminFirestore().collection("users").doc(uid);
@@ -177,7 +177,7 @@ export async function upsertLearnerProfile(params: {
   uid: string;
   email?: string;
   displayName?: string;
-  photoURL?: string;
+  photoUrl?: string;
 }) {
   const now = Timestamp.now();
   const userDocRef = getUserDocRef(params.uid);
@@ -191,7 +191,7 @@ export async function upsertLearnerProfile(params: {
       uid: params.uid,
       email: params.email ?? existingProfile?.email,
       displayName: params.displayName ?? existingProfile?.displayName,
-      photoURL: params.photoURL ?? existingProfile?.photoURL,
+      photoUrl: params.photoUrl ?? existingProfile?.photoUrl,
       provider: "google.com",
       preferredTarget: existingProfile?.preferredTarget ?? "Band 6+",
       totalPassages: existingProfile?.totalPassages ?? 0,
@@ -217,7 +217,7 @@ export async function getLearnerProfileByUid(uid: string) {
     uid: data.uid,
     displayName: data.displayName ?? null,
     email: data.email ?? null,
-    photoUrl: data.photoURL ?? null,
+    photoUrl: data.photoUrl ?? null,
   } satisfies LearnerProfileDto;
 }
 

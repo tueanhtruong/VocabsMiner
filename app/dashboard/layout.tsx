@@ -56,7 +56,6 @@ function DashboardNavbar() {
     router.replace("/login");
   }
 
-  console.log("🚀 ~ DashboardNavbar ~ user:", user);
   const initials =
     user?.displayName
       ?.split(" ")
@@ -139,10 +138,16 @@ function DashboardNavbar() {
                     viewBox="0 0 24 24"
                   >
                     <path
+                      d="M3 9.5l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3m10-11v11a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                    <polyline
+                      points="9 22 9 12 15 12 15 22"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
                     />
                   </svg>
                   Dashboard

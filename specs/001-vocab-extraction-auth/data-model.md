@@ -8,7 +8,7 @@
   - `uid` (string, required, immutable)
   - `email` (string, required)
   - `displayName` (string, optional)
-  - `photoURL` (string, optional)
+  - `photoUrl` (string, optional)
   - `provider` (string, required, fixed to `google.com`)
   - `createdAt` (timestamp, required)
   - `lastLoginAt` (timestamp, required)

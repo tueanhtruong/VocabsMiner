@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
@@ -24,6 +24,7 @@ export default function PassageDetailPage() {
   const router = useRouter();
   const params = useParams<{ recordId: string }>();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [isPassageDrawerOpen, setIsPassageDrawerOpen] = useState(false);
 
   const detailQuery = useQuery({
     queryKey: ["passage-detail", params.recordId],
@@ -48,6 +49,24 @@ export default function PassageDetailPage() {
   }, [detailQuery.data?.passage, selectedWord]);
 
   const showNoMatch = Boolean(selectedWord) && highlightedPassage.length === 0;
+
+  useEffect(() => {
+    if (!isPassageDrawerOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsPassageDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPassageDrawerOpen]);
 
   if (detailQuery.isLoading) {
     return (
@@ -105,7 +124,10 @@ export default function PassageDetailPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+        <h1
+          className="truncate text-3xl font-semibold tracking-tight text-gray-900"
+          title={detailQuery.data.title}
+        >
           {detailQuery.data.title}
         </h1>
         <p className="text-sm text-gray-600">
@@ -113,23 +135,84 @@ export default function PassageDetailPage() {
         </p>
       </header>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <PassagePanel
-          passage={detailQuery.data.passage}
-          selectedWord={selectedWord}
-          highlightedRanges={highlightedPassage}
-          showNoMatch={showNoMatch}
-        />
-        <VocabularyPanel
-          vocabularyList={detailQuery.data.vocabularyList}
-          selectedWord={selectedWord}
-          onSelectWord={(word) =>
-            setSelectedWord((currentWord) =>
-              currentWord === word ? null : word,
-            )
-          }
-        />
+      <section className="grid gap-6 md:grid-cols-2">
+        <div className="hidden md:block">
+          <PassagePanel
+            passage={detailQuery.data.passage}
+            selectedWord={selectedWord}
+            highlightedRanges={highlightedPassage}
+            showNoMatch={showNoMatch}
+          />
+        </div>
+
+        <div>
+          <div className="mb-3 md:hidden">
+            <button
+              type="button"
+              onClick={() => setIsPassageDrawerOpen(true)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              View Passage
+            </button>
+          </div>
+
+          <VocabularyPanel
+            vocabularyList={detailQuery.data.vocabularyList}
+            selectedWord={selectedWord}
+            onSelectWord={(word) => {
+              setSelectedWord((currentWord) =>
+                currentWord === word ? null : word,
+              );
+
+              if (window.matchMedia("(max-width: 767px)").matches) {
+                setIsPassageDrawerOpen(true);
+              }
+            }}
+          />
+        </div>
       </section>
+
+      <div
+        className={`fixed inset-0 z-50 md:hidden ${
+          isPassageDrawerOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+        aria-hidden={!isPassageDrawerOpen}
+      >
+        <button
+          type="button"
+          aria-label="Close passage drawer"
+          onClick={() => setIsPassageDrawerOpen(false)}
+          className={`absolute inset-0 bg-black/40 transition-opacity ${
+            isPassageDrawerOpen ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        <aside
+          className={`absolute left-0 top-0 h-full w-[min(90vw,28rem)] overflow-y-auto border-r border-gray-200 bg-gray-50 p-4 shadow-xl transition-transform ${
+            isPassageDrawerOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Passage drawer"
+        >
+          <div className="mb-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setIsPassageDrawerOpen(false)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              Close
+            </button>
+          </div>
+
+          <PassagePanel
+            passage={detailQuery.data.passage}
+            selectedWord={selectedWord}
+            highlightedRanges={highlightedPassage}
+            showNoMatch={showNoMatch}
+          />
+        </aside>
+      </div>
     </main>
   );
 }
