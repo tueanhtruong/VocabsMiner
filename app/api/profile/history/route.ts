@@ -34,7 +34,16 @@ export async function GET(request: Request) {
       vocabularyCursor: url.searchParams.get("vocabularyCursor"),
     });
 
-    return apiOk(history);
+    return apiOk({
+      ...history,
+      passages: history.passages.map((item) => ({
+        recordId: item.recordId,
+        title: item.title,
+        previewText: item.previewText,
+        createdAt: item.createdAt,
+        vocabularyCount: item.vocabularyCount,
+      })),
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_CURSOR") {
       return apiError("INVALID_CURSOR", "Invalid cursor", 400);

@@ -1,6 +1,9 @@
 import { apiError, apiOk } from "@/lib/api/http";
 import { getAuthenticatedUserFromAuthorizationHeader } from "@/lib/auth/session";
-import { listVocabularyCollection } from "@/lib/firebase/firestore-service";
+import {
+  getPassageDetailByRecordId,
+  listVocabularyCollection,
+} from "@/lib/firebase/firestore-service";
 
 function parseLimit(value: string | null) {
   if (!value) {
@@ -24,8 +27,26 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
+  const recordId = url.searchParams.get("recordId")?.trim();
 
   try {
+    if (recordId !== undefined && recordId !== null) {
+      if (!recordId) {
+        return apiError("INVALID_INPUT", "recordId is required", 400);
+      }
+
+      const detail = await getPassageDetailByRecordId({
+        uid: authenticatedUser.uid,
+        recordId,
+      });
+
+      if (!detail) {
+        return apiError("NOT_FOUND", "Passage record was not found", 404);
+      }
+
+      return apiOk(detail);
+    }
+
     const result = await listVocabularyCollection({
       uid: authenticatedUser.uid,
       limit: parseLimit(url.searchParams.get("limit")),
@@ -45,6 +66,10 @@ export async function GET(request: Request) {
         "Invalid vocabulary query parameters",
         400,
       );
+    }
+
+    if (recordId) {
+      return apiError("NOT_FOUND", "Unable to load passage detail", 500);
     }
 
     return apiError("INTERNAL_ERROR", "Unable to load vocabulary", 500);

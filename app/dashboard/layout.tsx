@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -16,24 +16,26 @@ import { useRestoreSessionQuery } from "@/lib/query-hooks/auth";
 function DashboardNavbar() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<SessionUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: restoredSession } = useRestoreSessionQuery();
+  const user = useMemo<SessionUser | null>(() => {
+    if (!restoredSession?.restored) {
+      return null;
+    }
+
+    return restoredSession.user;
+  }, [restoredSession]);
 
   useEffect(() => {
     if (!restoredSession) {
       return;
     }
 
-    if (restoredSession.restored) {
-      setUser(restoredSession.user);
-      return;
+    if (!restoredSession.restored) {
+      clearUidFromLocalStore();
     }
-
-    clearUidFromLocalStore();
-    setUser(null);
   }, [restoredSession]);
 
   useEffect(() => {
@@ -54,6 +56,7 @@ function DashboardNavbar() {
     router.replace("/login");
   }
 
+  console.log("🚀 ~ DashboardNavbar ~ user:", user);
   const initials =
     user?.displayName
       ?.split(" ")
@@ -128,6 +131,7 @@ function DashboardNavbar() {
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700"
                 >
+                  {/* Home Icon */}
                   <svg
                     className="h-4 w-4"
                     fill="none"
@@ -138,7 +142,7 @@ function DashboardNavbar() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3m10-11v11a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                     />
                   </svg>
                   Dashboard

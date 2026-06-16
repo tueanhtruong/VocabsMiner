@@ -21,10 +21,11 @@ export function ExtractionResult({
     return (
       <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
         <h2 className="text-base font-semibold text-gray-900">
-          No vocabulary found
+          No vocabulary found in this passage
         </h2>
         <p className="mt-1 text-sm text-gray-600">
-          Try a longer academic passage to get stronger extraction results.
+          Your passage is still saved. You can open it from Passage History and
+          try another extraction with a denser academic text.
         </p>
       </div>
     );

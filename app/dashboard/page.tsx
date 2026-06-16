@@ -16,6 +16,7 @@ import {
 const maxPassageLength = 5000;
 
 export default function DashboardPage() {
+  const [title, setTitle] = useState("");
   const [passage, setPassage] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [vocabulary, setVocabulary] = useState<ExtractionVocabularyItem[]>([]);
@@ -33,19 +34,29 @@ export default function DashboardPage() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!passage.trim()) {
+    const normalizedTitle = title.trim();
+    const normalizedPassage = passage.trim();
+
+    if (!normalizedTitle || !normalizedPassage) {
       setErrorCode("INVALID_INPUT");
-      setErrorMessage("Please enter a passage before extracting.");
+      setErrorMessage(
+        "Please provide both a title and passage before extracting.",
+      );
       return;
     }
 
     setErrorCode(null);
     setErrorMessage(null);
+    setIsSubmitted(false);
 
     try {
-      const response = await extractionMutation.mutateAsync(passage);
-      setVocabulary(response.vocabulary ?? []);
+      const response = await extractionMutation.mutateAsync({
+        title: normalizedTitle,
+        passage: normalizedPassage,
+      });
+      setVocabulary(response.vocabularyList ?? []);
       setIsSubmitted(true);
+      router.push(`/dashboard/passages/${response.recordId}`);
     } catch (error) {
       if (error instanceof ApiClientError) {
         setErrorCode(error.code);
@@ -73,6 +84,21 @@ export default function DashboardPage() {
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <form className="space-y-4" onSubmit={onSubmit}>
+          <label
+            htmlFor="title"
+            className="block text-sm font-semibold text-gray-900"
+          >
+            Passage title
+          </label>
+          <input
+            id="title"
+            type="text"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
+            placeholder="Add a short title for this passage"
+            maxLength={120}
+          />
           <label
             htmlFor="passage"
             className="block text-sm font-semibold text-gray-900"

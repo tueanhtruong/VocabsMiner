@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
 
 import { ApiClientError } from "@/lib/query-hooks/api-client";
@@ -51,15 +52,20 @@ export function HistoryPanel() {
           <ul className="mt-3 space-y-2">
             {passages.map((item) => (
               <li
-                key={item.passageId}
+                key={item.recordId}
                 className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
               >
-                <p className="text-sm text-gray-700">{item.previewText}</p>
-                <p className="mt-1 text-xs text-gray-500">
-                  {new Date(item.createdAt).toLocaleString()} •{" "}
-                  {item.vocabularyCount} word
-                  {item.vocabularyCount > 1 ? "s" : ""}
-                </p>
+                <Link href={`/dashboard/passages/${item.recordId}`}>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {item.title}
+                  </p>
+                  <p className="text-sm text-gray-700">{item.previewText}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {new Date(item.createdAt).toLocaleString()} •{" "}
+                    {item.vocabularyCount} word
+                    {item.vocabularyCount > 1 ? "s" : ""}
+                  </p>
+                </Link>
               </li>
             ))}
           </ul>

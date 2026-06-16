@@ -45,15 +45,22 @@ export async function POST(request: Request) {
 
   const payload = await request.json().catch(() => null);
 
+  let title: string;
   let passage: string;
 
   try {
-    passage = parseExtractionRequest(payload).passage;
+    const parsedPayload = parseExtractionRequest(payload);
+    title = parsedPayload.title;
+    passage = parsedPayload.passage;
   } catch {
-    return apiError("INVALID_INPUT", "A valid passage is required", 400);
+    return apiError(
+      "INVALID_INPUT",
+      "A valid title and passage are required",
+      400,
+    );
   }
 
-  const extractionId = crypto.randomUUID();
+  const recordId = crypto.randomUUID();
   const createdAt = Timestamp.now();
 
   try {
@@ -121,12 +128,13 @@ export async function POST(request: Request) {
     //   },
     // ];
     const vocabulary = await extractVocabularyFromPassage(passage);
-    // console.log("🚀 ~ POST ~ vocabulary:", vocabulary);
 
     await recordPassageHistory({
       uid: authenticatedUser.uid,
-      extractionId,
+      extractionId: recordId,
+      title,
       passageText: passage,
+      vocabulary,
       vocabularyCount: vocabulary.length,
       createdAt,
     });
@@ -134,15 +142,17 @@ export async function POST(request: Request) {
     if (vocabulary.length > 0) {
       await upsertVocabularyItems({
         uid: authenticatedUser.uid,
-        extractionId,
+        extractionId: recordId,
         vocabulary,
         createdAt,
       });
     }
 
     return apiOk({
-      extractionId,
-      vocabulary,
+      recordId,
+      title,
+      passage,
+      vocabularyList: vocabulary,
       resultCount: vocabulary.length,
       saved: true,
       createdAt: createdAt.toDate().toISOString(),

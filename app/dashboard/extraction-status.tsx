@@ -4,6 +4,9 @@ type ExtractionErrorCode =
   | "RATE_LIMITED"
   | "EXTRACTION_PROVIDER_ERROR"
   | "STORAGE_FAILURE"
+  | "PROFILE_HISTORY_FAILURE"
+  | "DETAIL_LOAD_FAILURE"
+  | "NOT_FOUND"
   | "INTERNAL_ERROR";
 
 type ExtractionStatusProps = {
@@ -12,15 +15,22 @@ type ExtractionStatusProps = {
 };
 
 const messages: Record<ExtractionErrorCode, string> = {
-  INVALID_INPUT: "Please enter a non-empty passage before extracting.",
+  INVALID_INPUT:
+    "Please enter both a title and a non-empty passage before extracting.",
   UNAUTHORIZED: "Your session expired. Please sign in again.",
   RATE_LIMITED:
     "The extraction service is busy right now. Please retry shortly.",
   EXTRACTION_PROVIDER_ERROR:
-    "We could not process this passage at the moment. Please try again.",
+    "The vocabulary service could not process this passage right now. Please try again in a moment.",
   STORAGE_FAILURE:
-    "Extraction finished, but we could not save your data. Please retry.",
-  INTERNAL_ERROR: "Something went wrong. Please try again.",
+    "We extracted vocabulary but could not save this passage, so the detail page could not open. Please submit again.",
+  PROFILE_HISTORY_FAILURE:
+    "Your passage history could not be loaded right now. Refresh and try again.",
+  DETAIL_LOAD_FAILURE:
+    "This passage detail is temporarily unavailable. Return to dashboard and try opening it again.",
+  NOT_FOUND:
+    "That passage record no longer exists. Return to dashboard and choose another saved passage.",
+  INTERNAL_ERROR: "Something unexpected happened. Please retry.",
 };
 
 export function ExtractionStatus({

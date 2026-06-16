@@ -10,9 +10,16 @@ export type ExtractionVocabularyItem = {
   context: string;
 };
 
+export type ExtractVocabularyRequest = {
+  title: string;
+  passage: string;
+};
+
 export type ExtractionResponse = {
-  extractionId: string;
-  vocabulary: ExtractionVocabularyItem[];
+  recordId: string;
+  title: string;
+  passage: string;
+  vocabularyList: ExtractionVocabularyItem[];
   resultCount: number;
   saved: boolean;
   createdAt: string;
@@ -20,13 +27,13 @@ export type ExtractionResponse = {
 
 export function useExtractVocabularyMutation() {
   return useMutation({
-    mutationFn: async (passage: string) =>
+    mutationFn: async (payload: ExtractVocabularyRequest) =>
       requestJson<ExtractionResponse>("/api/extract", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ passage }),
+        body: JSON.stringify(payload),
       }),
   });
 }

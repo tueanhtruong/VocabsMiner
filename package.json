@@ -1,5 +1,6 @@
 {
   "name": "vocabs-miner",
+  "description": "Turn heavy IELTS passages into personalized vocabulary goldmines.",
   "version": "0.1.0",
   "private": true,
   "scripts": {

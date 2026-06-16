@@ -47,13 +47,17 @@ export type StoredVocabularyItem = {
 };
 
 export type PassageHistoryItem = {
-  passageId: string;
+  recordId: string;
   extractionId: string;
   uid: string;
+  title: string;
+  passage: string;
+  vocabularyList: VocabularyItemInput[];
   previewText: string;
   passageHash: string;
   vocabularyCount: number;
   createdAt: Timestamp;
+  updatedAt: Timestamp;
 };
 
 export type VocabularyApiItem = {
@@ -67,10 +71,19 @@ export type VocabularyApiItem = {
 };
 
 export type PassageApiItem = {
-  passageId: string;
+  recordId: string;
+  title: string;
   previewText: string;
   createdAt: string;
   vocabularyCount: number;
+};
+
+export type PassageDetailApiItem = {
+  recordId: string;
+  title: string;
+  passage: string;
+  vocabularyList: VocabularyItemInput[];
+  createdAt: string;
 };
 
 const defaultVocabularyLimit = 20;
@@ -119,6 +132,17 @@ function buildPassagePreview(passage: string, maxLength = 180) {
   }
 
   return `${trimmed.slice(0, maxLength - 1)}…`;
+}
+
+function resolvePassageTitle(title: string | undefined, passage: string) {
+  const normalized = title?.trim();
+
+  if (normalized) {
+    return normalized;
+  }
+
+  const fallback = buildPassagePreview(passage, 60);
+  return fallback || "Untitled passage";
 }
 
 function encodeCursor(payload: Record<string, string | number>) {
@@ -204,11 +228,15 @@ export function hashPassage(passage: string) {
 export async function recordPassageHistory(params: {
   uid: string;
   extractionId: string;
+  title: string;
   passageText: string;
+  vocabulary: VocabularyItemInput[];
   vocabularyCount: number;
   createdAt?: Timestamp;
 }) {
   const createdAt = params.createdAt ?? Timestamp.now();
+  const updatedAt = createdAt;
+  const resolvedTitle = resolvePassageTitle(params.title, params.passageText);
   const passageRef = getUserPassagesCollectionRef(params.uid).doc(
     params.extractionId,
   );
@@ -218,13 +246,17 @@ export async function recordPassageHistory(params: {
     transaction.set(
       passageRef,
       {
-        passageId: params.extractionId,
+        recordId: params.extractionId,
         extractionId: params.extractionId,
         uid: params.uid,
+        title: resolvedTitle,
+        passage: params.passageText,
+        vocabularyList: params.vocabulary,
         previewText: buildPassagePreview(params.passageText),
         passageHash: hashPassage(params.passageText),
         vocabularyCount: Math.max(params.vocabularyCount, 0),
         createdAt,
+        updatedAt,
       } satisfies PassageHistoryItem,
       { merge: true },
     );
@@ -503,12 +535,14 @@ export async function getProfileHistory(params: {
   const passagesSnapshot = await passagesQuery.limit(passagesLimit).get();
   const passages = passagesSnapshot.docs.map((doc) => {
     const data = doc.data() as PassageHistoryItem;
+    const passage = data.passage ?? "";
 
     return {
-      passageId: data.passageId ?? doc.id,
-      previewText: data.previewText,
+      recordId: data.recordId ?? doc.id,
+      title: resolvePassageTitle(data.title, passage),
+      previewText: data.previewText ?? buildPassagePreview(passage),
       createdAt: toDateIsoString(data.createdAt),
-      vocabularyCount: data.vocabularyCount,
+      vocabularyCount: data.vocabularyCount ?? 0,
     } satisfies PassageApiItem;
   });
 
@@ -564,4 +598,34 @@ export async function getProfileHistory(params: {
           : null,
     },
   };
+}
+
+export async function getPassageDetailByRecordId(params: {
+  uid: string;
+  recordId: string;
+}) {
+  const normalizedRecordId = params.recordId.trim();
+
+  if (!normalizedRecordId) {
+    return null;
+  }
+
+  const snapshot = await getUserPassagesCollectionRef(params.uid)
+    .doc(normalizedRecordId)
+    .get();
+
+  if (!snapshot.exists) {
+    return null;
+  }
+
+  const data = snapshot.data() as PassageHistoryItem;
+  const passage = data.passage ?? "";
+
+  return {
+    recordId: data.recordId ?? snapshot.id,
+    title: resolvePassageTitle(data.title, passage),
+    passage,
+    vocabularyList: data.vocabularyList ?? [],
+    createdAt: toDateIsoString(data.createdAt),
+  } satisfies PassageDetailApiItem;
 }

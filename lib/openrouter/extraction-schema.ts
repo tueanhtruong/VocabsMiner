@@ -3,6 +3,7 @@ import { z } from "zod";
 import { openRouterConfig } from "@/lib/openrouter/config";
 
 export const extractionRequestSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
   passage: z
     .string()
     .trim()
