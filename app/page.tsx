@@ -1,20 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-
-import { getUidFromLocalStore } from "@/lib/auth/google-auth";
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!getUidFromLocalStore()) {
-      router.replace("/login?next=/");
-    }
-  }, [router]);
-
   return (
     <main className="flex w-full flex-col bg-gradient-to-br from-white via-blue-50 to-indigo-50">
       {/* Hero Section */}
