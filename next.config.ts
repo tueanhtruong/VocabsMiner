@@ -16,6 +16,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/__/auth/:path*",
+        destination: "https://vocabminer-app.firebaseapp.com/__/auth/:path*",
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
