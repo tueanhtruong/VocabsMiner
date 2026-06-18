@@ -388,7 +388,7 @@ export default function Home() {
                   >
                     {step.icon}
                   </div>
-                  <span className="text-5xl font-black text-gray-100">
+                  <span className="text-5xl font-black text-gray-300">
                     {step.number}
                   </span>
                 </div>
