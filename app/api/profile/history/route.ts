@@ -1,6 +1,9 @@
 import { apiError, apiOk } from "@/lib/api/http";
 import { getAuthenticatedUserFromAuthorizationHeader } from "@/lib/auth/session";
-import { getProfileHistory } from "@/lib/firebase/firestore-service";
+import {
+  deletePassageHistoryByRecordId,
+  getProfileHistory,
+} from "@/lib/firebase/firestore-service";
 
 function parseLimit(value: string | null) {
   if (!value) {
@@ -58,5 +61,46 @@ export async function GET(request: Request) {
       "Unable to load profile history",
       500,
     );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const authenticatedUser = await getAuthenticatedUserFromAuthorizationHeader();
+
+  if (!authenticatedUser) {
+    return apiError("UNAUTHORIZED", "Authentication required", 401);
+  }
+
+  try {
+    const body = await request.json();
+    const recordId = body.recordId?.trim();
+
+    if (!recordId) {
+      return apiError("INVALID_INPUT", "recordId is required", 400);
+    }
+
+    const deleted = await deletePassageHistoryByRecordId({
+      uid: authenticatedUser.uid,
+      recordId,
+    });
+
+    return apiOk({
+      recordId: deleted.recordId,
+      deleted: true,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return apiError("NOT_FOUND", "Passage was not found", 404);
+    }
+
+    if (error instanceof Error && error.message === "INVALID_INPUT") {
+      return apiError("INVALID_INPUT", "Invalid request data", 400);
+    }
+
+    if (error instanceof SyntaxError) {
+      return apiError("INVALID_INPUT", "Invalid request body", 400);
+    }
+
+    return apiError("INTERNAL_ERROR", "Unable to delete passage", 500);
   }
 }

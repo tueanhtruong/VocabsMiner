@@ -65,16 +65,17 @@ export function PassagePanel({
 
   return (
     <article className="sticky top-18 self-start rounded-2xl border border-gray-200 bg-white p-5 lg:max-h-[calc(100vh-4.5rem)]">
-      <h2 className="text-lg font-semibold text-gray-900">Passage</h2>
-
-      <div className="mt-3 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Passage</h2>
         {showNoMatch && selectedWord ? (
-          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <span className="text-sm text-red-600 font-semibold">
             No direct match was found for &quot;{selectedWord}&quot; in this
             passage.
-          </p>
+          </span>
         ) : null}
+      </div>
 
+      <div className="mt-3 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
         <p
           className={`whitespace-pre-wrap text-sm leading-7 text-gray-700 ${showNoMatch && selectedWord ? "mt-3" : ""}`}
         >

@@ -7,7 +7,7 @@ export type DetailVocabularyItem = {
   type: string;
   phonetic: string;
   definition: string;
-  context: string;
+  vietnamese: string;
 };
 
 type VocabularyPanelProps = {
@@ -24,7 +24,7 @@ type FormData = {
   type: string;
   phonetic: string;
   definition: string;
-  context: string;
+  vietnamese: string;
 };
 
 export function VocabularyPanel({
@@ -46,7 +46,7 @@ export function VocabularyPanel({
     type: "",
     phonetic: "",
     definition: "",
-    context: "",
+    vietnamese: "",
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export function VocabularyPanel({
       type: "",
       phonetic: "",
       definition: "",
-      context: "",
+      vietnamese: "",
     });
     setErrors({});
     setFormError(null);
@@ -81,6 +81,10 @@ export function VocabularyPanel({
 
     if (!formData.definition.trim()) {
       newErrors.definition = "Definition is required";
+    }
+
+    if (!formData.vietnamese.trim()) {
+      newErrors.vietnamese = "Vietnamese translation is required";
     }
 
     setErrors(newErrors);
@@ -120,7 +124,7 @@ export function VocabularyPanel({
       type: item.type,
       phonetic: item.phonetic,
       definition: item.definition,
-      context: item.context,
+      vietnamese: item.vietnamese,
     });
     setErrors({});
     setFormError(null);
@@ -214,16 +218,16 @@ export function VocabularyPanel({
                         <p className="font-semibold text-gray-900">
                           {item.word}
                         </p>
-                        <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">
+                        <p className="mt-1 text-xs tracking-wide text-gray-500">
                           {item.type}{" "}
-                          {item.phonetic ? `• ${item.phonetic}` : ""}
+                          {item.phonetic ? `⎻⎻⎻ ${item.phonetic}` : ""}
                         </p>
                         <p className="mt-1 text-sm text-gray-700">
                           {item.definition}
                         </p>
-                        {item.context ? (
+                        {item.vietnamese ? (
                           <p className="mt-2 text-xs text-gray-500">
-                            {item.context}
+                            {item.vietnamese}
                           </p>
                         ) : null}
                       </button>
@@ -403,23 +407,32 @@ export function VocabularyPanel({
                 )}
               </div>
 
-              {/* Context Field */}
+              {/* Vietnamese Field */}
               <div>
                 <label
-                  htmlFor="context"
+                  htmlFor="vietnamese"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Context
+                  Vietnamese <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  id="context"
-                  name="context"
-                  value={formData.context}
+                  id="vietnamese"
+                  name="vietnamese"
+                  value={formData.vietnamese}
                   onChange={handleInputChange}
-                  placeholder="Add context or example usage..."
+                  placeholder="Enter concise Vietnamese translation..."
                   rows={2}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm transition focus:outline-none focus:ring-2 ${
+                    errors.vietnamese
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-indigo-500"
+                  }`}
                 />
+                {errors.vietnamese && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.vietnamese}
+                  </p>
+                )}
               </div>
 
               {/* Form Actions */}

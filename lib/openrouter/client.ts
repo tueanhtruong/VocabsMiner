@@ -78,18 +78,18 @@ function toOpenRouterError(status: number, bodyText: string) {
 }
 
 function buildExtractionPrompt(passage: string) {
-  return `Extract all academic vocabulary from the passage below.
+  return `Extract all academic vocabulary found from the passage below.
 Rules:
 - Include only words/phrases that are academic, formal, or topic-specific (exclude basic everyday words)
 - Prefer words useful for IELTS Writing/Reading
 - Return STRICT JSON only - no explanation, no markdown, no extra text
 Output shape:
-{"vocabulary":[{"word":"","type":"","phonetic":"","definition":"","context":""}]}
+{"vocabulary":[{"word":"","type":"","phonetic":"","definition":"","vietnamese":""}]}
 - "word": the word or phrase as it appears
 - "type": part of speech — one of: noun | verb | adjective | adverb | phrase | conjunction | preposition
 - "phonetic": the IPA phonetic transcription
 - "definition": a concise English definition
-- "context": the exact sentence it was used in
+- "vietnamese": a concise Vietnamese translation
 Passage:
 """
 ${passage}

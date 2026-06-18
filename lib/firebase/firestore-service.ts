@@ -32,7 +32,7 @@ export type VocabularyItemInput = {
   type: string;
   phonetic: string;
   definition: string;
-  context: string;
+  vietnamese: string;
 };
 
 export type StoredVocabularyItem = {
@@ -41,7 +41,7 @@ export type StoredVocabularyItem = {
   word: string;
   normalizedWord: string;
   definition: string;
-  contextSnippet: string;
+  vietnamese: string;
   firstSeenAt: Timestamp;
   lastSeenAt: Timestamp;
   occurrenceCount: number;
@@ -66,7 +66,7 @@ export type VocabularyApiItem = {
   vocabularyId: string;
   word: string;
   definition: string;
-  context: string;
+  vietnamese: string;
   firstSeenAt: string;
   lastSeenAt: string;
   occurrenceCount: number;
@@ -153,7 +153,7 @@ function normalizeVocabularyItem(item: Partial<VocabularyItemInput>) {
     type: (item.type ?? "").trim(),
     phonetic: (item.phonetic ?? "").trim(),
     definition: (item.definition ?? "").trim(),
-    context: (item.context ?? "").trim(),
+    vietnamese: (item.vietnamese ?? "").trim(),
   } satisfies VocabularyItemInput;
 }
 
@@ -301,7 +301,7 @@ export async function upsertVocabularyItems(params: {
     {
       word: string;
       definition: string;
-      context: string;
+      vietnamese: string;
       count: number;
     }
   >();
@@ -323,7 +323,7 @@ export async function upsertVocabularyItems(params: {
     combinedItems.set(normalizedWord, {
       word: item.word.trim(),
       definition: item.definition.trim(),
-      context: item.context.trim(),
+      vietnamese: item.vietnamese.trim(),
       count: 1,
     });
   }
@@ -368,7 +368,7 @@ export async function upsertVocabularyItems(params: {
           word: item.word,
           normalizedWord,
           definition: item.definition,
-          contextSnippet: item.context,
+          vietnamese: item.vietnamese,
           firstSeenAt: now,
           lastSeenAt: now,
           occurrenceCount: item.count,
@@ -383,7 +383,7 @@ export async function upsertVocabularyItems(params: {
         {
           word: item.word,
           definition: item.definition,
-          contextSnippet: item.context,
+          vietnamese: item.vietnamese,
           lastSeenAt: now,
           occurrenceCount: existingData.occurrenceCount + item.count,
           passageRefs: Array.from(
@@ -479,7 +479,10 @@ export async function listVocabularyCollection(params: {
       vocabularyId: data.vocabularyId ?? doc.id,
       word: data.word,
       definition: data.definition,
-      context: data.contextSnippet,
+      vietnamese:
+        data.vietnamese ??
+        (data as { contextSnippet?: string }).contextSnippet ??
+        "",
       firstSeenAt: toDateIsoString(data.firstSeenAt),
       lastSeenAt: toDateIsoString(data.lastSeenAt),
       occurrenceCount: data.occurrenceCount,
@@ -792,4 +795,126 @@ export async function deleteVocabularyFromPassage(params: {
   return {
     ...normalizeVocabularyItem(removedItem),
   } satisfies VocabularyItemInput;
+}
+
+export async function deletePassageHistoryByRecordId(params: {
+  uid: string;
+  recordId: string;
+}) {
+  const normalizedRecordId = params.recordId.trim();
+
+  if (!normalizedRecordId) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    normalizedRecordId,
+  );
+  const userRef = getUserDocRef(params.uid);
+  const vocabularyRef = getUserVocabularyCollectionRef(params.uid);
+
+  await getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const passageSnapshot = await transaction.get(passageRef);
+
+    if (!passageSnapshot.exists) {
+      throw new Error("NOT_FOUND");
+    }
+
+    const userSnapshot = await transaction.get(userRef);
+    const userData = userSnapshot.data() as LearnerProfile | undefined;
+    const currentTotalPassages = userData?.totalPassages ?? 0;
+    const currentTotalVocabularySaved = userData?.totalVocabularySaved ?? 0;
+    const passageData = passageSnapshot.data() as PassageHistoryItem;
+    const vocabularyList = passageData.vocabularyList ?? [];
+    const wordCountByVocabularyId = new Map<string, number>();
+
+    for (const item of vocabularyList) {
+      const normalizedWord = normalizeWord(item.word);
+
+      if (!normalizedWord) {
+        continue;
+      }
+
+      const vocabularyId = toVocabularyId(normalizedWord);
+      const previousCount = wordCountByVocabularyId.get(vocabularyId) ?? 0;
+      wordCountByVocabularyId.set(vocabularyId, previousCount + 1);
+    }
+
+    const vocabularySnapshots = await Promise.all(
+      Array.from(wordCountByVocabularyId.keys()).map(async (vocabularyId) => {
+        const vocabularyDocRef = vocabularyRef.doc(vocabularyId);
+        const vocabularySnapshot = await transaction.get(vocabularyDocRef);
+
+        return {
+          vocabularyId,
+          vocabularyDocRef,
+          vocabularySnapshot,
+        };
+      }),
+    );
+
+    let deletedVocabularyCount = 0;
+
+    for (const {
+      vocabularyId,
+      vocabularyDocRef,
+      vocabularySnapshot,
+    } of vocabularySnapshots) {
+      if (!vocabularySnapshot.exists) {
+        continue;
+      }
+
+      const occurrenceCountInPassage =
+        wordCountByVocabularyId.get(vocabularyId) ?? 0;
+      const vocabularyData = vocabularySnapshot.data() as StoredVocabularyItem;
+      const currentPassageRefs = vocabularyData.passageRefs ?? [];
+      const isLinkedToPassage = currentPassageRefs.includes(normalizedRecordId);
+
+      if (!isLinkedToPassage) {
+        continue;
+      }
+
+      const nextPassageRefs = currentPassageRefs.filter(
+        (recordId) => recordId !== normalizedRecordId,
+      );
+      const nextOccurrenceCount = Math.max(
+        (vocabularyData.occurrenceCount ?? 0) - occurrenceCountInPassage,
+        0,
+      );
+
+      if (!nextPassageRefs.length || nextOccurrenceCount === 0) {
+        transaction.delete(vocabularyDocRef);
+        deletedVocabularyCount += 1;
+        continue;
+      }
+
+      transaction.set(
+        vocabularyDocRef,
+        {
+          occurrenceCount: nextOccurrenceCount,
+          passageRefs: nextPassageRefs,
+        },
+        { merge: true },
+      );
+    }
+
+    transaction.delete(passageRef);
+    transaction.set(
+      userRef,
+      {
+        uid: params.uid,
+        totalPassages: Math.max(currentTotalPassages - 1, 0),
+        totalVocabularySaved: Math.max(
+          currentTotalVocabularySaved - deletedVocabularyCount,
+          0,
+        ),
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true },
+    );
+  });
+
+  return {
+    recordId: normalizedRecordId,
+  };
 }

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { ApiClientError } from "@/lib/query-hooks/api-client";
 import {
+  useDeletePassageHistoryMutation,
   usePassageHistoryQuery,
   useVocabularyHistoryQuery,
 } from "@/lib/query-hooks/history";
@@ -14,11 +15,17 @@ const PAGE_SIZE = 10;
 export function HistoryPanel() {
   const passagesQuery = usePassageHistoryQuery();
   const vocabularyQuery = useVocabularyHistoryQuery();
+  const deletePassageMutation = useDeletePassageHistoryMutation();
 
   const [passageSearch, setPassageSearch] = useState("");
   const [passagePage, setPassagePage] = useState(1);
   const [vocabSearch, setVocabSearch] = useState("");
   const [vocabPage, setVocabPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    recordId: string;
+    title: string;
+  } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const allPassages = passagesQuery.data ?? [];
@@ -81,6 +88,25 @@ export function HistoryPanel() {
       ? vocabularyQuery.error.message
       : null);
 
+  async function handleConfirmDeletePassage() {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeleteError(null);
+
+    try {
+      await deletePassageMutation.mutateAsync(deleteTarget.recordId);
+      setDeleteTarget(null);
+    } catch (error) {
+      setDeleteError(
+        error instanceof ApiClientError
+          ? error.message
+          : "Unable to delete this passage. Please try again.",
+      );
+    }
+  }
+
   return (
     <section className="space-y-4">
       {error ? (
@@ -110,17 +136,49 @@ export function HistoryPanel() {
                 key={item.recordId}
                 className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
               >
-                <Link href={`/dashboard/passages/${item.recordId}`}>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {item.title}
-                  </p>
-                  <p className="text-sm text-gray-700">{item.previewText}</p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {new Date(item.createdAt).toLocaleString()} •{" "}
-                    {item.vocabularyCount} word
-                    {item.vocabularyCount > 1 ? "s" : ""}
-                  </p>
-                </Link>
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/dashboard/passages/${item.recordId}`}
+                    className="min-w-0 flex-1"
+                  >
+                    <p className="text-sm font-semibold text-gray-900">
+                      {item.title}
+                    </p>
+                    <p className="text-sm text-gray-700">{item.previewText}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {new Date(item.createdAt).toLocaleString()} •{" "}
+                      {item.vocabularyCount} word
+                      {item.vocabularyCount > 1 ? "s" : ""}
+                    </p>
+                  </Link>
+                  <button
+                    type="button"
+                    aria-label={`Delete ${item.title}`}
+                    onClick={() => {
+                      setDeleteError(null);
+                      setDeleteTarget({
+                        recordId: item.recordId,
+                        title: item.title,
+                      });
+                    }}
+                    className="rounded-md p-1.5 text-gray-500 transition hover:bg-red-100 hover:text-red-700"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M4 7h16" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                      <path d="M6 7l1 12h10l1-12" />
+                      <path d="M9 7V5h6v2" />
+                    </svg>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -190,6 +248,7 @@ export function HistoryPanel() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-700">{item.definition}</p>
+                <p className="mt-1 text-sm text-gray-700">{item.vietnamese}</p>
                 <p className="mt-1 text-xs text-gray-500">
                   Last seen {new Date(item.lastSeenAt).toLocaleString()}
                 </p>
@@ -233,6 +292,78 @@ export function HistoryPanel() {
             </div>
           ) : null}
         </article>
+      </div>
+
+      <div
+        className={`fixed inset-0 z-50 ${
+          deleteTarget ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+        aria-hidden={!deleteTarget}
+      >
+        <button
+          type="button"
+          aria-label="Close delete passage dialog"
+          onClick={() => {
+            if (deletePassageMutation.isPending) {
+              return;
+            }
+
+            setDeleteTarget(null);
+            setDeleteError(null);
+          }}
+          className={`absolute inset-0 bg-black/40 transition-opacity ${
+            deleteTarget ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <div
+            className={`w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-5 shadow-lg transition-opacity ${
+              deleteTarget ? "opacity-100" : "opacity-0"
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete passage confirmation dialog"
+          >
+            <h3 className="text-base font-semibold text-gray-900">
+              Delete passage?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              This will permanently remove{" "}
+              <span className="font-medium text-gray-900">
+                {deleteTarget?.title}
+              </span>
+              . It will also remove this passage from linked vocabulary, and any
+              vocabulary that no longer belongs to any passage will be deleted.
+            </p>
+
+            {deleteError ? (
+              <p className="mt-3 text-sm text-red-600">{deleteError}</p>
+            ) : null}
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                disabled={deletePassageMutation.isPending}
+                onClick={() => {
+                  setDeleteTarget(null);
+                  setDeleteError(null);
+                }}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletePassageMutation.isPending}
+                onClick={handleConfirmDeletePassage}
+                className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletePassageMutation.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

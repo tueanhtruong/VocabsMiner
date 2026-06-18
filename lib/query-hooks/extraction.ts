@@ -9,7 +9,7 @@ export type ExtractionVocabularyItem = {
   type: string;
   phonetic: string;
   definition: string;
-  context: string;
+  vietnamese: string;
 };
 
 export type ExtractVocabularyRequest = {

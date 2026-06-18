@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { requestJson } from "@/lib/query-hooks/api-client";
 
@@ -23,6 +23,9 @@ export type VocabularyHistoryItem = {
   definition: string;
   lastSeenAt: string;
   occurrenceCount: number;
+  type: string;
+  phonetic: string;
+  vietnamese: string;
 };
 
 type ProfileHistoryResponse = {
@@ -33,6 +36,11 @@ type ProfileHistoryResponse = {
     passagesCursor: string | null;
     vocabularyCursor: string | null;
   };
+};
+
+type DeletePassageHistoryResponse = {
+  recordId: string;
+  deleted: boolean;
 };
 
 async function getProfileHistoryPage(params: {
@@ -50,6 +58,16 @@ async function getProfileHistoryPage(params: {
   }
 
   return requestJson<ProfileHistoryResponse>(url.toString(), { method: "GET" });
+}
+
+async function deletePassageHistory(recordId: string) {
+  return requestJson<DeletePassageHistoryResponse>("/api/profile/history", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ recordId }),
+  });
 }
 
 export function usePassageHistoryQuery() {
@@ -82,5 +100,19 @@ export function useVocabularyHistoryQuery() {
     queryKey: ["history", "vocabulary"],
     queryFn: () => getProfileHistoryPage({}),
     select: (data) => data.vocabulary,
+  });
+}
+
+export function useDeletePassageHistoryMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deletePassageHistory,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["history", "passages"] }),
+        queryClient.invalidateQueries({ queryKey: ["history", "vocabulary"] }),
+      ]);
+    },
   });
 }

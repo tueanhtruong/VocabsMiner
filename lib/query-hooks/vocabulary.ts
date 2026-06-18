@@ -8,7 +8,7 @@ export type VocabularyApiItem = {
   vocabularyId: string;
   word: string;
   definition: string;
-  context: string;
+  vietnamese: string;
   firstSeenAt: string;
   lastSeenAt: string;
   occurrenceCount: number;

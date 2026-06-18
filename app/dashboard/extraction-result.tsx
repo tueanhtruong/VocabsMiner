@@ -3,7 +3,7 @@ type ExtractionVocabularyItem = {
   type: string;
   phonetic: string;
   definition: string;
-  context: string;
+  vietnamese: string;
 };
 
 type ExtractionResultProps = {
@@ -52,7 +52,7 @@ export function ExtractionResult({
             </p>
             <p className="mt-1 text-sm text-gray-700">{item.definition}</p>
             <p className="mt-2 text-xs leading-5 text-gray-500">
-              {item.context}
+              {item.vietnamese}
             </p>
           </li>
         ))}

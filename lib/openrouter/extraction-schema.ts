@@ -19,7 +19,7 @@ export const vocabularyItemSchema = z.object({
   type: z.string().trim().min(1),
   phonetic: z.string().trim().min(1),
   definition: z.string().trim().min(1),
-  context: z.string().trim().min(1),
+  vietnamese: z.string().trim().min(1),
 });
 
 export const extractionResultSchema = z.object({

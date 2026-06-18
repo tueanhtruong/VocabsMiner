@@ -44,7 +44,7 @@ export default function PassageDetailPage() {
     type: string;
     phonetic: string;
     definition: string;
-    context: string;
+    vietnamese: string;
   }) => {
     try {
       const url = new URL("/api/vocabulary", window.location.origin);
@@ -84,7 +84,7 @@ export default function PassageDetailPage() {
       type: string;
       phonetic: string;
       definition: string;
-      context: string;
+      vietnamese: string;
     },
   ) => {
     try {

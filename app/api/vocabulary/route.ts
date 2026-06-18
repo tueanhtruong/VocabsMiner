@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     const definition = body.definition?.trim();
     const type = body.type?.trim() || "";
     const phonetic = body.phonetic?.trim() || "";
-    const context = body.context?.trim() || "";
+    const vietnamese = body.vietnamese?.trim() || "";
 
     if (!recordId) {
       return apiError("INVALID_INPUT", "recordId is required", 400);
@@ -116,6 +116,10 @@ export async function POST(request: Request) {
       return apiError("INVALID_INPUT", "definition is required", 400);
     }
 
+    if (!vietnamese) {
+      return apiError("INVALID_INPUT", "vietnamese is required", 400);
+    }
+
     const vocabulary = await addVocabularyToPassage({
       uid: authenticatedUser.uid,
       recordId,
@@ -124,7 +128,7 @@ export async function POST(request: Request) {
         type,
         phonetic,
         definition,
-        context,
+        vietnamese,
       },
     });
 
@@ -165,7 +169,7 @@ export async function PUT(request: Request) {
     const definition = body.definition?.trim();
     const type = body.type?.trim() || "";
     const phonetic = body.phonetic?.trim() || "";
-    const context = body.context?.trim() || "";
+    const vietnamese = body.vietnamese?.trim() || "";
 
     if (!recordId) {
       return apiError("INVALID_INPUT", "recordId is required", 400);
@@ -179,6 +183,10 @@ export async function PUT(request: Request) {
       return apiError("INVALID_INPUT", "definition is required", 400);
     }
 
+    if (!vietnamese) {
+      return apiError("INVALID_INPUT", "vietnamese is required", 400);
+    }
+
     const vocabulary = await updateVocabularyInPassage({
       uid: authenticatedUser.uid,
       recordId,
@@ -188,7 +196,7 @@ export async function PUT(request: Request) {
         type,
         phonetic,
         definition,
-        context,
+        vietnamese,
       },
     });
 
