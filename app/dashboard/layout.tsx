@@ -73,7 +73,7 @@ function DashboardNavbar() {
           className="flex items-center gap-2 transition hover:opacity-80"
         >
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-indigo-600 to-blue-600">
-            <span className="text-xs font-bold text-white">V</span>
+            <span className="text-sm font-bold text-white">V</span>
           </div>
           <span className="text-base font-bold tracking-tight text-gray-900">
             VocabMiner
@@ -99,7 +99,7 @@ function DashboardNavbar() {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 text-xs font-bold text-white">
+              <span className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 text-sm font-bold text-white">
                 {initials}
               </span>
             )}
@@ -116,7 +116,7 @@ function DashboardNavbar() {
                     </p>
                   )}
                   {user.email && (
-                    <p className="truncate text-xs text-gray-500">
+                    <p className="truncate text-sm text-gray-500">
                       {user.email}
                     </p>
                   )}

@@ -218,15 +218,15 @@ export function VocabularyPanel({
                         <p className="font-semibold text-gray-900">
                           {item.word}
                         </p>
-                        <p className="mt-1 text-xs tracking-wide text-gray-500">
+                        <p className="mt-1 text-sm tracking-wide text-gray-500">
                           {item.type}{" "}
-                          {item.phonetic ? `⎻⎻⎻ ${item.phonetic}` : ""}
+                          {item.phonetic ? `|  ${item.phonetic}` : ""}
                         </p>
                         <p className="mt-1 text-sm text-gray-700">
                           {item.definition}
                         </p>
                         {item.vietnamese ? (
-                          <p className="mt-2 text-xs text-gray-500">
+                          <p className="mt-2 text-sm text-gray-500">
                             {item.vietnamese}
                           </p>
                         ) : null}
@@ -337,7 +337,7 @@ export function VocabularyPanel({
                   }`}
                 />
                 {errors.word && (
-                  <p className="mt-1 text-xs text-red-500">{errors.word}</p>
+                  <p className="mt-1 text-sm text-red-500">{errors.word}</p>
                 )}
               </div>
 
@@ -401,7 +401,7 @@ export function VocabularyPanel({
                   }`}
                 />
                 {errors.definition && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-sm text-red-500">
                     {errors.definition}
                   </p>
                 )}
@@ -429,7 +429,7 @@ export function VocabularyPanel({
                   }`}
                 />
                 {errors.vietnamese && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-sm text-red-500">
                     {errors.vietnamese}
                   </p>
                 )}

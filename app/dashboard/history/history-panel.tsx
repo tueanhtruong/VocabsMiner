@@ -145,7 +145,7 @@ export function HistoryPanel() {
                       {item.title}
                     </p>
                     <p className="text-sm text-gray-700">{item.previewText}</p>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-sm text-gray-500">
                       {new Date(item.createdAt).toLocaleString()} •{" "}
                       {item.vocabularyCount} word
                       {item.vocabularyCount > 1 ? "s" : ""}
@@ -193,7 +193,7 @@ export function HistoryPanel() {
 
           {passageTotalPages > 1 ? (
             <div className="mt-3 flex items-center justify-between gap-2">
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-500">
                 Page {safePassagePage} of {passageTotalPages}
               </p>
               <div className="flex gap-1">
@@ -201,7 +201,7 @@ export function HistoryPanel() {
                   type="button"
                   onClick={() => setPassagePage((p) => Math.max(1, p - 1))}
                   disabled={safePassagePage === 1}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                 >
                   Prev
                 </button>
@@ -211,7 +211,7 @@ export function HistoryPanel() {
                     setPassagePage((p) => Math.min(passageTotalPages, p + 1))
                   }
                   disabled={safePassagePage === passageTotalPages}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                 >
                   Next
                 </button>
@@ -242,14 +242,14 @@ export function HistoryPanel() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold text-gray-900">{item.word}</p>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-sm text-gray-500">
                     {item.occurrenceCount} hit
                     {item.occurrenceCount > 1 ? "s" : ""}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-700">{item.definition}</p>
                 <p className="mt-1 text-sm text-gray-700">{item.vietnamese}</p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-sm text-gray-500">
                   Last seen {new Date(item.lastSeenAt).toLocaleString()}
                 </p>
               </li>
@@ -266,7 +266,7 @@ export function HistoryPanel() {
 
           {vocabTotalPages > 1 ? (
             <div className="mt-3 flex items-center justify-between gap-2">
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-500">
                 Page {safeVocabPage} of {vocabTotalPages}
               </p>
               <div className="flex gap-1">
@@ -274,7 +274,7 @@ export function HistoryPanel() {
                   type="button"
                   onClick={() => setVocabPage((p) => Math.max(1, p - 1))}
                   disabled={safeVocabPage === 1}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                 >
                   Prev
                 </button>
@@ -284,7 +284,7 @@ export function HistoryPanel() {
                     setVocabPage((p) => Math.min(vocabTotalPages, p + 1))
                   }
                   disabled={safeVocabPage === vocabTotalPages}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                 >
                   Next
                 </button>

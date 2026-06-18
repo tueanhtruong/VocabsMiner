@@ -125,7 +125,7 @@ export default function DashboardPage() {
             maxLength={maxPassageLength}
           />
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-gray-500">
+            <p className="text-sm text-gray-500">
               {passage.length}/{maxPassageLength} characters
             </p>
             <button

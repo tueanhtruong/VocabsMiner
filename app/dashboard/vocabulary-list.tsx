@@ -114,7 +114,7 @@ export function VocabularyList() {
                     <h3 className="font-semibold text-gray-900">
                       {item.title}
                     </h3>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-sm text-gray-500">
                       {item.vocabularyCount} word
                       {item.vocabularyCount > 1 ? "s" : ""}
                     </span>
@@ -122,7 +122,7 @@ export function VocabularyList() {
                   <p className="mt-1 line-clamp-2 text-sm text-gray-700">
                     {item.previewText}
                   </p>
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-sm text-gray-500">
                     {new Date(item.createdAt).toLocaleString()}
                   </p>
                 </Link>
@@ -169,7 +169,7 @@ export function VocabularyList() {
 
       {totalPages > 1 ? (
         <div className="flex items-center justify-between gap-2 pt-1">
-          <p className="text-xs text-gray-500">
+          <p className="text-sm text-gray-500">
             Page {safePage} of {totalPages} &middot; {filtered.length} passages
           </p>
           <div className="flex gap-1">
@@ -177,7 +177,7 @@ export function VocabularyList() {
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
             >
               Prev
             </button>
@@ -185,7 +185,7 @@ export function VocabularyList() {
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
             >
               Next
             </button>

@@ -73,7 +73,7 @@ const STEPS = [
     number: "02",
     title: "AI Extracts Vocabulary",
     description:
-      "Our AI model scans the passage and pinpoints every high-impact academic word — with Band 7+ relevance scoring so you know exactly what to focus on.",
+      "Our AI model scans the passage and pinpoints every high-impact academic word — with Band 6+ relevance scoring so you know exactly what to focus on.",
     icon: (
       <svg
         className="h-8 w-8"
@@ -120,7 +120,7 @@ const FEATURES = [
     icon: "🔍",
     title: "Smart Extraction",
     description:
-      "AI trained on academic English identifies vocabulary that appears most in IELTS Band 7+ essays and readings.",
+      "AI trained on academic English identifies vocabulary that appears most in IELTS Band 6+ essays and readings.",
   },
   {
     icon: "📍",
@@ -155,7 +155,7 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: "<5m", label: "To extract vocabulary from any passage" },
+  { value: "<10s", label: "To extract vocabulary from any passage" },
   { value: "20+", label: "Vocabulary words extracted per passage" },
   { value: "Band 6+", label: "Target vocabulary level focus" },
   { value: "100%", label: "Context preserved per extracted word" },
@@ -172,14 +172,14 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex w-full flex-col overflow-hidden bg-white">
+    <main className="flex w-full flex-col overflow-hidden bg-linear-to-br from-white via-indigo-50 to-blue-50">
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0a0714] px-6 py-24 text-center">
+      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-linear-to-br from-white via-indigo-50 to-blue-50 px-6 py-24 text-center">
         {/* Animated gradient orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="animate-float absolute -top-40 -left-40 h-125 w-125 rounded-full bg-indigo-700/25 blur-3xl" />
-          <div className="animate-float-reverse absolute top-1/2 -right-40 h-100 w-100 rounded-full bg-purple-700/20 blur-3xl" />
-          <div className="animate-float absolute bottom-0 left-1/3 h-87.5 w-87.5 rounded-full bg-blue-700/15 blur-3xl" />
+          <div className="animate-float absolute -top-40 -left-40 h-125 w-125 rounded-full bg-indigo-300/10 blur-3xl" />
+          <div className="animate-float-reverse absolute top-1/2 -right-40 h-100 w-100 rounded-full bg-purple-300/10 blur-3xl" />
+          <div className="animate-float absolute bottom-0 left-1/3 h-87.5 w-87.5 rounded-full bg-blue-300/10 blur-3xl" />
           {/* Dot grid overlay */}
           <div
             className="absolute inset-0 opacity-[0.07]"
@@ -194,22 +194,22 @@ export default function Home() {
         {/* Content */}
         <div className="relative z-10 mx-auto max-w-5xl space-y-8">
           {/* Live badge */}
-          <div className="animate-fade-in inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-600/15 px-5 py-2 text-sm font-medium text-indigo-300 backdrop-blur-sm">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
+          <div className="animate-fade-in inline-flex items-center gap-2 rounded-full border border-indigo-300 bg-indigo-100/60 px-5 py-2 text-sm font-medium text-indigo-700 backdrop-blur-sm">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-600" />
             AI-Powered IELTS Vocabulary Extractor
           </div>
 
           {/* Headline */}
-          <h1 className="animate-fade-in-up text-5xl font-extrabold leading-tight tracking-tight text-white md:text-7xl">
+          <h1 className="animate-fade-in-up text-5xl font-extrabold leading-tight tracking-tight text-gray-900 md:text-7xl">
             Stop Looking Up Words.{" "}
-            <span className="animate-gradient-text bg-linear-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="animate-gradient-text bg-linear-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
               Start Mastering Them.
             </span>
           </h1>
 
           {/* Sub-headline */}
           <p
-            className="animate-fade-in-up mx-auto max-w-2xl text-xl leading-relaxed text-gray-300"
+            className="animate-fade-in-up mx-auto max-w-2xl text-lg leading-relaxed text-gray-600"
             style={{ animationDelay: "0.1s" }}
           >
             Paste any IELTS reading passage and watch VocabMiner instantly
@@ -243,7 +243,7 @@ export default function Home() {
             </Link>
             <Link
               href="/dashboard/history"
-              className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/15"
+              className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-8 py-4 text-base font-semibold text-gray-900 backdrop-blur-sm transition-all hover:border-indigo-400 hover:bg-indigo-50"
             >
               View History
             </Link>
@@ -254,9 +254,9 @@ export default function Home() {
             className="animate-scale-in mx-auto mt-6 w-full max-w-sm"
             style={{ animationDelay: "0.4s" }}
           >
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-left shadow-2xl backdrop-blur-md">
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-6 text-left shadow-2xl backdrop-blur-md">
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-widest text-indigo-400">
+                <span className="text-sm font-semibold uppercase tracking-widest text-indigo-700">
                   Live Preview
                 </span>
                 <div className="flex gap-1.5">
@@ -265,8 +265,8 @@ export default function Home() {
                       key={i}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
                         i === activeCard
-                          ? "w-5 bg-indigo-400"
-                          : "w-1.5 bg-white/25"
+                          ? "w-5 bg-indigo-600"
+                          : "w-1.5 bg-indigo-200"
                       }`}
                     />
                   ))}
@@ -274,20 +274,20 @@ export default function Home() {
               </div>
               <div className="min-h-30 transition-all duration-500">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-2xl font-bold text-white">
+                  <h3 className="text-2xl font-bold text-gray-900">
                     {VOCAB_CARDS[activeCard].word}
                   </h3>
-                  <span className="mt-1 shrink-0 rounded-full border border-indigo-500/30 bg-indigo-600/35 px-2.5 py-0.5 text-xs font-semibold text-indigo-300">
+                  <span className="mt-1 shrink-0 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-sm font-semibold text-amber-800">
                     {VOCAB_CARDS[activeCard].band}
                   </span>
                 </div>
-                <p className="mt-1 text-sm font-medium text-indigo-300">
+                <p className="mt-1 text-sm font-medium text-indigo-600">
                   {VOCAB_CARDS[activeCard].type}
                 </p>
-                <p className="mt-2 text-sm text-gray-300">
+                <p className="mt-2 text-sm text-gray-700">
                   {VOCAB_CARDS[activeCard].definition}
                 </p>
-                <p className="mt-3 rounded-lg bg-white/5 px-3 py-2 text-xs italic text-gray-400">
+                <p className="mt-3 rounded-lg bg-indigo-100 px-3 py-2 text-sm italic text-indigo-700">
                   &ldquo;{VOCAB_CARDS[activeCard].example}&rdquo;
                 </p>
               </div>
@@ -296,9 +296,9 @@ export default function Home() {
         </div>
 
         {/* Scroll indicator */}
-        <div className="animate-bounce-slow absolute bottom-8">
-          <div className="flex flex-col items-center gap-1 text-white/35">
-            <span className="text-xs">Scroll to explore</span>
+        <div className="animate-bounce-slow absolute bottom-8 mx-auto">
+          <div className="flex flex-col items-center gap-1 text-gray-400">
+            {/* <span className="text-sm">Scroll to explore</span> */}
             <svg
               className="h-5 w-5"
               fill="none"
@@ -317,23 +317,23 @@ export default function Home() {
       </section>
 
       {/* ── PAIN POINTS ───────────────────────────────────────────────── */}
-      <section className="bg-gray-950 px-6 py-20">
+      <section className="bg-gray-50 px-6 py-20">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-3 text-3xl font-bold text-white md:text-4xl">
+          <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
             Sound familiar?
           </h2>
-          <p className="mb-12 text-lg text-gray-400">
+          <p className="mb-12 text-lg text-gray-600">
             Every IELTS learner hits these walls. VocabMiner tears them down.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {PAIN_POINTS.map((point, i) => (
               <div
                 key={i}
-                className="animate-slide-in-right flex items-center gap-4 rounded-xl border border-red-900/30 bg-red-950/20 p-5 text-left"
+                className="animate-slide-in-right flex items-center gap-4 rounded-xl border border-red-200 bg-red-50 p-5 text-left"
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
                 <span className="text-2xl">{point.icon}</span>
-                <p className="text-gray-300">{point.text}</p>
+                <p className="text-gray-700">{point.text}</p>
                 <svg
                   className="ml-auto h-5 w-5 shrink-0 text-red-500"
                   fill="none"
@@ -351,11 +351,11 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-10 flex items-center justify-center gap-4">
-            <div className="h-px flex-1 bg-linear-to-r from-transparent to-indigo-600/50" />
+            <div className="h-px flex-1 bg-linear-to-r from-transparent to-indigo-300" />
             <span className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white">
               VocabMiner fixes all of this
             </span>
-            <div className="h-px flex-1 bg-linear-to-l from-transparent to-indigo-600/50" />
+            <div className="h-px flex-1 bg-linear-to-l from-transparent to-indigo-300" />
           </div>
         </div>
       </section>
@@ -370,7 +370,7 @@ export default function Home() {
             <h2 className="text-4xl font-bold text-gray-900 md:text-5xl">
               How VocabMiner Works
             </h2>
-            <p className="mt-4 text-xl text-gray-500">
+            <p className="mt-4 text-lg text-gray-500">
               From raw passage to mastered vocabulary in under 60 seconds.
             </p>
           </div>
@@ -392,7 +392,7 @@ export default function Home() {
                     {step.number}
                   </span>
                 </div>
-                <h3 className="mb-3 text-xl font-bold text-gray-900">
+                <h3 className="mb-3 text-lg font-bold text-gray-900">
                   {step.title}
                 </h3>
                 <p className="leading-relaxed text-gray-600">
@@ -414,7 +414,7 @@ export default function Home() {
             <h2 className="text-4xl font-bold text-gray-900 md:text-5xl">
               Built for Serious IELTS Learners
             </h2>
-            <p className="mt-4 text-xl text-gray-500">
+            <p className="mt-4 text-lg text-gray-500">
               Not a general dictionary. A precision instrument tuned for IELTS
               success.
             </p>
@@ -467,7 +467,7 @@ export default function Home() {
                   "Example sentence showing natural academic usage",
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-gray-700">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-600">
                       ✓
                     </span>
                     {item}
@@ -480,10 +480,10 @@ export default function Home() {
             <div className="rounded-3xl bg-linear-to-br from-indigo-600 via-purple-600 to-blue-700 p-1 shadow-2xl shadow-indigo-500/30">
               <div className="rounded-3xl bg-white p-7">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white">
+                  <span className="rounded-full bg-indigo-600 px-3 py-1 text-sm font-bold text-white">
                     Extracted from passage
                   </span>
-                  <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                  <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-700">
                     Band C1
                   </span>
                 </div>
@@ -498,7 +498,7 @@ export default function Home() {
                   feeling worse.
                 </p>
                 <div className="mt-5 rounded-xl border-l-4 border-indigo-400 bg-gray-50 p-4">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-gray-400">
                     In your passage
                   </p>
                   <p className="text-sm italic text-gray-600">
@@ -511,7 +511,7 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="mt-4 rounded-xl bg-indigo-50 p-4">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-indigo-400">
+                  <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-indigo-400">
                     Example sentence
                   </p>
                   <p className="text-sm text-indigo-900">
@@ -550,19 +550,19 @@ export default function Home() {
       </section>
 
       {/* ── FINAL CTA ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-[#0a0714] px-6 py-32 text-center">
+      <section className="relative overflow-hidden bg-linear-to-br from-white via-indigo-50 to-blue-50 px-6 py-32 text-center">
         <div className="pointer-events-none absolute inset-0">
-          <div className="animate-float absolute top-0 left-1/4 h-80 w-80 rounded-full bg-indigo-600/20 blur-3xl" />
-          <div className="animate-float-reverse absolute bottom-0 right-1/4 h-80 w-80 rounded-full bg-purple-600/20 blur-3xl" />
+          <div className="animate-float absolute top-0 left-1/4 h-80 w-80 rounded-full bg-indigo-200/15 blur-3xl" />
+          <div className="animate-float-reverse absolute bottom-0 right-1/4 h-80 w-80 rounded-full bg-purple-200/15 blur-3xl" />
         </div>
         <div className="relative z-10 mx-auto max-w-2xl">
-          <h2 className="mb-6 text-4xl font-extrabold text-white md:text-6xl">
-            Your IELTS Band 7+{" "}
-            <span className="animate-gradient-text bg-linear-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+          <h2 className="mb-6 text-4xl font-extrabold text-gray-900 md:text-6xl">
+            Your IELTS Band 6+{" "}
+            <span className="animate-gradient-text bg-linear-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
               starts here.
             </span>
           </h2>
-          <p className="mb-10 text-xl text-gray-400">
+          <p className="mb-10 text-lg text-gray-600">
             Join learners who stopped guessing and started building a systematic
             academic vocabulary — one passage at a time.
           </p>
@@ -589,13 +589,13 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────────────────── */}
-      <footer className="bg-gray-950 px-6 py-10 text-center">
+      <footer className="bg-white px-6 py-10 text-center">
         <div className="mx-auto max-w-6xl">
           <div className="mb-4 flex items-center justify-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-indigo-600 to-blue-600">
               <span className="text-sm font-bold text-white">V</span>
             </div>
-            <span className="text-lg font-bold text-white">VocabMiner</span>
+            <span className="text-lg font-bold text-gray-900">VocabMiner</span>
           </div>
           <p className="text-sm text-gray-500">
             © 2026 VocabMiner. Empowering IELTS learners worldwide.
