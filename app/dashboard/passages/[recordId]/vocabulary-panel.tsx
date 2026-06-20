@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import type { VocabularyDraft } from "@/lib/word-actions/types";
 
 export type DetailVocabularyItem = {
   word: string;
@@ -17,6 +19,7 @@ type VocabularyPanelProps = {
   onAddVocabulary?: (vocabulary: FormData) => Promise<void>;
   onUpdateVocabulary?: (index: number, vocabulary: FormData) => Promise<void>;
   onDeleteVocabulary?: (index: number) => Promise<void>;
+  draftSeed?: VocabularyDraft | null;
 };
 
 type FormData = {
@@ -34,6 +37,7 @@ export function VocabularyPanel({
   onAddVocabulary,
   onUpdateVocabulary,
   onDeleteVocabulary,
+  draftSeed,
 }: VocabularyPanelProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -116,6 +120,28 @@ export function VocabularyPanel({
     resetForm();
     setIsDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!draftSeed) {
+      return;
+    }
+
+    const draftTimer = window.setTimeout(() => {
+      setEditingIndex(null);
+      setIsDialogOpen(true);
+      setErrors({});
+      setFormError(null);
+      setFormData((current) => ({
+        word: current.word || draftSeed.word,
+        type: current.type || draftSeed.type,
+        phonetic: current.phonetic || draftSeed.phonetic,
+        definition: current.definition || draftSeed.definition,
+        vietnamese: current.vietnamese || draftSeed.vietnamese,
+      }));
+    }, 0);
+
+    return () => window.clearTimeout(draftTimer);
+  }, [draftSeed]);
 
   const handleOpenEditDialog = (item: DetailVocabularyItem, index: number) => {
     setEditingIndex(index);

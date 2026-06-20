@@ -11,6 +11,7 @@ import {
 } from "@/app/dashboard/passages/[recordId]/vocabulary-panel";
 import { ApiClientError, requestJson } from "@/lib/query-hooks/api-client";
 import { findHighlightRanges } from "@/app/dashboard/passages/[recordId]/highlight-utils";
+import type { VocabularyDraft } from "@/lib/word-actions/types";
 
 type PassageDetailResponse = {
   recordId: string;
@@ -26,6 +27,7 @@ export default function PassageDetailPage() {
   const queryClient = useQueryClient();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [isPassageDrawerOpen, setIsPassageDrawerOpen] = useState(false);
+  const [draftSeed, setDraftSeed] = useState<VocabularyDraft | null>(null);
 
   const detailQuery = useQuery({
     queryKey: ["passage-detail", params.recordId],
@@ -179,6 +181,30 @@ export default function PassageDetailPage() {
     }
   };
 
+  const handleGenerateVocabularyDraft = async (selectedWordText: string) => {
+    const passage = detailQuery.data?.passage;
+
+    if (!passage) {
+      return;
+    }
+
+    const url = new URL("/api/word-actions/draft", window.location.origin);
+    const response = await requestJson<{ draft: VocabularyDraft }>(
+      url.toString(),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: params.recordId,
+          passage,
+          selectedWord: selectedWordText,
+        }),
+      },
+    );
+
+    setDraftSeed(response.draft);
+  };
+
   const highlightedPassage = useMemo(() => {
     const passage = detailQuery.data?.passage ?? "";
 
@@ -283,6 +309,10 @@ export default function PassageDetailPage() {
             selectedWord={selectedWord}
             highlightedRanges={highlightedPassage}
             showNoMatch={showNoMatch}
+            onSelectWord={(word) => {
+              setSelectedWord(word);
+            }}
+            onGenerateVocabularyDraft={handleGenerateVocabularyDraft}
           />
         </div>
 
@@ -312,6 +342,7 @@ export default function PassageDetailPage() {
             onAddVocabulary={handleAddVocabulary}
             onUpdateVocabulary={handleUpdateVocabulary}
             onDeleteVocabulary={handleDeleteVocabulary}
+            draftSeed={draftSeed}
           />
         </div>
       </section>
@@ -354,8 +385,16 @@ export default function PassageDetailPage() {
             selectedWord={selectedWord}
             highlightedRanges={highlightedPassage}
             showNoMatch={showNoMatch}
+            onSelectWord={(word) => {
+              setSelectedWord(word);
+            }}
+            onGenerateVocabularyDraft={handleGenerateVocabularyDraft}
           />
         </aside>
+      </div>
+
+      <div className="sr-only" aria-live="polite">
+        {draftSeed ? `Vocabulary draft ready for ${draftSeed.word}.` : null}
       </div>
     </main>
   );

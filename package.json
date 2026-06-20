@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
+    "@vitalets/google-translate-api": "^9.2.1",
     "firebase": "^12.14.0",
     "firebase-admin": "^12.7.0",
     "next": "16.2.9",

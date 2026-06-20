@@ -56,6 +56,7 @@ App runs at `http://localhost:3000`.
 3. Review extracted words immediately in the results panel.
 4. Open vocabulary bank on dashboard for persisted, deduplicated words.
 5. Open `/dashboard/history` for passage and vocabulary timeline views.
+6. Open a saved passage detail page, select a word in the passage panel, and use the popup actions to translate it to Vietnamese or generate a prefilled vocabulary draft.
 
 ## API Endpoints
 
@@ -63,12 +64,16 @@ App runs at `http://localhost:3000`.
 - `DELETE /api/auth/session`: clear session cookie.
 - `POST /api/extract`: extract vocabulary from a passage and persist history.
 - `GET /api/vocabulary`: paginated vocabulary list with optional prefix filter.
+- `POST /api/word-actions/translate`: translate a selected passage word to Vietnamese.
+- `POST /api/word-actions/draft`: generate a prefilled vocabulary draft from a selected passage word.
 - `GET /api/profile/history`: paginated combined passage and vocabulary history.
 
 Protected routes require either:
 
 - `Authorization: Bearer <firebase_id_token>`
 - Session cookie set by `/api/auth/session`
+
+The word-action routes use the same authenticated request pattern as the rest of the app.
 
 ## Linting
 
