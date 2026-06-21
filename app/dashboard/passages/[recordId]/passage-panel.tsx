@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Menu, Portal } from "@chakra-ui/react";
 
 import { HighlightRange } from "@/app/dashboard/passages/[recordId]/highlight-utils";
 
@@ -15,8 +16,6 @@ type PassagePanelProps = {
 
 type PopupState = {
   word: string;
-  top: number;
-  left: number;
 };
 
 export function PassagePanel({
@@ -29,11 +28,55 @@ export function PassagePanel({
 }: PassagePanelProps) {
   const firstMatchRef = useRef<HTMLElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const anchorRangeRef = useRef<Range | null>(null);
   const [popupState, setPopupState] = useState<PopupState | null>(null);
+  const [triggerPosition, setTriggerPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [translation, setTranslation] = useState<string | null>(null);
   const [translationError, setTranslationError] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+
+  const resetPopupState = () => {
+    anchorRangeRef.current = null;
+    setPopupState(null);
+    setTriggerPosition(null);
+    setTranslation(null);
+    setTranslationError(null);
+    setIsTranslating(false);
+    setIsGeneratingDraft(false);
+  };
+
+  const syncTriggerPosition = () => {
+    const range = anchorRangeRef.current;
+
+    if (!range) {
+      setTriggerPosition(null);
+      return;
+    }
+
+    const rect = range.getBoundingClientRect();
+
+    if (!rect.width && !rect.height) {
+      setTriggerPosition(null);
+      return;
+    }
+
+    setTriggerPosition((current) => {
+      const next = {
+        left: Math.max(8, rect.left),
+        top: Math.max(8, rect.bottom + 8),
+      };
+
+      if (current && current.left === next.left && current.top === next.top) {
+        return current;
+      }
+
+      return next;
+    });
+  };
 
   const extractVietnameseText = (payload: unknown): string | null => {
     if (!Array.isArray(payload) || !Array.isArray(payload[0])) {
@@ -101,28 +144,6 @@ export function PassagePanel({
   }, [highlightedRanges.length, selectedWord]);
 
   useEffect(() => {
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-
-      if (containerRef.current?.contains(target)) {
-        return;
-      }
-
-      setPopupState(null);
-      setTranslation(null);
-      setTranslationError(null);
-      setIsTranslating(false);
-      setIsGeneratingDraft(false);
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown);
-
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!popupState?.word) {
       return;
     }
@@ -184,6 +205,38 @@ export function PassagePanel({
     };
   }, [popupState?.word]);
 
+  useEffect(() => {
+    if (!popupState) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const requestPositionSync = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        syncTriggerPosition();
+      });
+    };
+
+    requestPositionSync();
+
+    window.addEventListener("scroll", requestPositionSync, true);
+    window.addEventListener("resize", requestPositionSync);
+
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+
+      window.removeEventListener("scroll", requestPositionSync, true);
+      window.removeEventListener("resize", requestPositionSync);
+    };
+  }, [popupState]);
+
   const captureSelection = () => {
     const selection = window.getSelection();
     const rawSelection = selection?.toString().trim();
@@ -208,13 +261,14 @@ export function PassagePanel({
     }
 
     onSelectWord(rawSelection);
+    anchorRangeRef.current = range.cloneRange();
     setPopupState({
       word: rawSelection,
-      top: rect.bottom + 8,
-      left: Math.min(window.innerWidth - 280, Math.max(16, rect.left)),
     });
+    syncTriggerPosition();
     setTranslation(null);
     setTranslationError(null);
+    setIsGeneratingDraft(false);
   };
 
   const handleGenerateDraft = async () => {
@@ -226,9 +280,7 @@ export function PassagePanel({
 
     try {
       await onGenerateVocabularyDraft(popupState.word);
-      setPopupState(null);
-      setTranslation(null);
-      setTranslationError(null);
+      resetPopupState();
     } finally {
       setIsGeneratingDraft(false);
     }
@@ -280,43 +332,98 @@ export function PassagePanel({
         </div>
       </div>
 
-      {popupState ? (
-        <div
-          className="fixed z-50 w-72 rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl"
-          style={{ top: popupState.top, left: popupState.left }}
-          role="dialog"
-          aria-label="Word actions"
-        >
-          <div className="space-y-2">
-            <button
-              type="button"
-              disabled
-              className="w-full cursor-default rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-left text-sm font-medium text-indigo-900 disabled:opacity-100"
+      <Menu.Root
+        open={Boolean(popupState && triggerPosition)}
+        onOpenChange={(details) => {
+          if (!details.open) {
+            resetPopupState();
+          }
+        }}
+        positioning={{
+          strategy: "fixed",
+          placement: "bottom-start",
+          gutter: 0,
+        }}
+      >
+        <Menu.Trigger asChild>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            style={{
+              position: "fixed",
+              left: triggerPosition?.left ?? -9999,
+              top: triggerPosition?.top ?? -9999,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: "none",
+            }}
+          />
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner zIndex="modal">
+            <Menu.Content
+              minW="18rem"
+              rounded="xl"
+              borderWidth="1px"
+              borderColor="gray.200"
+              bg="white"
+              p="2"
+              shadow="2xl"
             >
-              {isTranslating
-                ? "Translating..."
-                : translation
-                  ? translation
-                  : "Translate to Vietnamese"}
-            </button>
+              <Menu.Item
+                value="translated-word"
+                disabled
+                cursor="default"
+                rounded="lg"
+                borderWidth="1px"
+                borderColor="blue.100"
+                bg="blue.50"
+                color="blue.900"
+                fontSize="sm"
+                fontWeight="medium"
+                py="2"
+              >
+                {isTranslating
+                  ? "Translating..."
+                  : translation
+                    ? translation
+                    : "Translate to Vietnamese"}
+              </Menu.Item>
 
-            <button
-              type="button"
-              onClick={handleGenerateDraft}
-              disabled={isGeneratingDraft}
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm font-medium text-gray-800 transition hover:bg-gray-50 disabled:opacity-50"
-            >
-              {isGeneratingDraft
-                ? "Preparing vocabulary draft..."
-                : "Create vocabulary draft"}
-            </button>
+              <Menu.Item
+                value="create-vocabulary-draft"
+                closeOnSelect={false}
+                disabled={isGeneratingDraft}
+                onSelect={() => {
+                  void handleGenerateDraft();
+                }}
+                rounded="lg"
+                borderWidth="1px"
+                borderColor="gray.200"
+                bg="white"
+                color="gray.800"
+                fontSize="sm"
+                fontWeight="medium"
+                py="2"
+                _hover={{ bg: "gray.50" }}
+                _disabled={{ opacity: 0.5 }}
+              >
+                {isGeneratingDraft
+                  ? "Preparing vocabulary draft..."
+                  : "Create vocabulary draft"}
+              </Menu.Item>
 
-            {translationError ? (
-              <p className="text-xs text-red-600">{translationError}</p>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+              {translationError ? (
+                <p className="px-2 pt-2 text-xs text-red-600">
+                  {translationError}
+                </p>
+              ) : null}
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
     </article>
   );
 }
