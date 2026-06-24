@@ -60,6 +60,15 @@ export function PassageText({
             const key = `${segIndex}-${tokenIndex}`;
 
             if (!token || /^\s+$/.test(token)) {
+              if (/\n{1,}/.test(token)) {
+                return (
+                  <span key={key} aria-hidden>
+                    <span className="block h-3" />
+                    <span className="block h-3" />
+                  </span>
+                );
+              }
+
               return <span key={key}>{token}</span>;
             }
 
