@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { ExtractionResult } from "@/app/dashboard/extraction-result";
 import { ExtractionStatus } from "@/app/dashboard/extraction-status";
 import { VocabularyList } from "@/app/dashboard/vocabulary-list";
-import { getUidFromLocalStore } from "@/lib/auth/google-auth";
 import { ApiClientError } from "@/lib/query-hooks/api-client";
 import {
   ExtractionVocabularyItem,
@@ -24,12 +23,6 @@ export default function DashboardPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const extractionMutation = useExtractVocabularyMutation();
-
-  useEffect(() => {
-    if (!getUidFromLocalStore()) {
-      router.replace("/login?next=/dashboard");
-    }
-  }, [router]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -72,7 +65,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
       {extractionMutation.isPending ? (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white/80 backdrop-blur-sm">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />

@@ -77,7 +77,7 @@ async function requestOpenRouterDraft(input: SelectedWordActionInput) {
   }
 
   const payload = {
-    model: openRouterConfig.model,
+    model: openRouterConfig.freeModel,
     response_format: { type: "json_object" },
     messages: [
       {

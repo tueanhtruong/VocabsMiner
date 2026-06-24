@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 
 import type { VocabularyDraft } from "@/lib/word-actions/types";
+import {
+  VocabularyFormDialog,
+  type VocabularyFormData,
+} from "./VocabularyFormDialog";
+import { DeleteVocabularyDialog } from "./DeleteVocabularyDialog";
 
 export type DetailVocabularyItem = {
   word: string;
@@ -16,18 +21,13 @@ type VocabularyPanelProps = {
   vocabularyList: DetailVocabularyItem[];
   selectedWord: string | null;
   onSelectWord: (word: string) => void;
-  onAddVocabulary?: (vocabulary: FormData) => Promise<void>;
-  onUpdateVocabulary?: (index: number, vocabulary: FormData) => Promise<void>;
+  onAddVocabulary?: (vocabulary: VocabularyFormData) => Promise<void>;
+  onUpdateVocabulary?: (
+    index: number,
+    vocabulary: VocabularyFormData,
+  ) => Promise<void>;
   onDeleteVocabulary?: (index: number) => Promise<void>;
   draftSeed?: VocabularyDraft | null;
-};
-
-type FormData = {
-  word: string;
-  type: string;
-  phonetic: string;
-  definition: string;
-  vietnamese: string;
 };
 
 export function VocabularyPanel({
@@ -45,14 +45,14 @@ export function VocabularyPanel({
     index: number;
     word: string;
   } | null>(null);
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<VocabularyFormData>({
     word: "",
     type: "",
     phonetic: "",
     definition: "",
     vietnamese: "",
   });
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [errors, setErrors] = useState<Partial<VocabularyFormData>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +77,7 @@ export function VocabularyPanel({
   };
 
   const validateForm = () => {
-    const newErrors: Partial<FormData> = {};
+    const newErrors: Partial<VocabularyFormData> = {};
 
     if (!formData.word.trim()) {
       newErrors.word = "Word is required";
@@ -104,7 +104,7 @@ export function VocabularyPanel({
       [name]: value,
     }));
     // Clear error for this field when user starts typing
-    if (errors[name as keyof FormData]) {
+    if (errors[name as keyof VocabularyFormData]) {
       setErrors((prev) => ({
         ...prev,
         [name]: undefined,
@@ -157,8 +157,8 @@ export function VocabularyPanel({
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    // e.preventDefault();
 
     if (!validateForm()) {
       return;
@@ -270,7 +270,7 @@ export function VocabularyPanel({
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="1.8"
-                            className="h-4 w-4"
+                            className="h-5 w-5"
                             aria-hidden="true"
                           >
                             <path d="M4 20h4l10-10-4-4L4 16v4z" />
@@ -291,7 +291,7 @@ export function VocabularyPanel({
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="1.8"
-                            className="h-4 w-4"
+                            className="h-5 w-5"
                             aria-hidden="true"
                           >
                             <path d="M4 7h16" />
@@ -311,260 +311,29 @@ export function VocabularyPanel({
         )}
       </article>
 
-      {/* Add Vocabulary Dialog */}
-      <div
-        className={`fixed inset-0 z-50 ${
-          isDialogOpen ? "pointer-events-auto" : "pointer-events-none"
-        }`}
-        aria-hidden={!isDialogOpen}
-      >
-        <button
-          type="button"
-          aria-label="Close add vocabulary dialog"
-          onClick={closeFormDialog}
-          className={`absolute inset-0 bg-black/40 transition-opacity ${
-            isDialogOpen ? "opacity-100" : "opacity-0"
-          }`}
-        />
+      <VocabularyFormDialog
+        open={isDialogOpen}
+        editingIndex={editingIndex}
+        formData={formData}
+        errors={errors}
+        formError={formError}
+        isSubmitting={isSubmitting}
+        onClose={closeFormDialog}
+        onInputChange={handleInputChange}
+        onSubmit={handleSubmit}
+      />
 
-        <div className="absolute inset-0 flex items-center justify-center p-4">
-          <div
-            className={`w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg transition-opacity ${
-              isDialogOpen ? "opacity-100" : "opacity-0"
-            }`}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Add vocabulary dialog"
-          >
-            <h3 className="text-lg font-semibold text-gray-900">
-              {editingIndex === null ? "Add New Vocabulary" : "Edit Vocabulary"}
-            </h3>
-
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-              {/* Word Field */}
-              <div>
-                <label
-                  htmlFor="word"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Word <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="word"
-                  name="word"
-                  value={formData.word}
-                  onChange={handleInputChange}
-                  placeholder="e.g., serendipity"
-                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm transition focus:outline-none focus:ring-2 ${
-                    errors.word
-                      ? "border-red-300 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-indigo-500"
-                  }`}
-                />
-                {errors.word && (
-                  <p className="mt-1 text-sm text-red-500">{errors.word}</p>
-                )}
-              </div>
-
-              {/* Type Field */}
-              <div>
-                <label
-                  htmlFor="type"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Type
-                </label>
-                <input
-                  type="text"
-                  id="type"
-                  name="type"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  placeholder="e.g., noun"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Phonetic Field */}
-              <div>
-                <label
-                  htmlFor="phonetic"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Phonetic
-                </label>
-                <input
-                  type="text"
-                  id="phonetic"
-                  name="phonetic"
-                  value={formData.phonetic}
-                  onChange={handleInputChange}
-                  placeholder="e.g., /ˌserənˈdɪpɪti/"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Definition Field */}
-              <div>
-                <label
-                  htmlFor="definition"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Definition <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="definition"
-                  name="definition"
-                  value={formData.definition}
-                  onChange={handleInputChange}
-                  placeholder="Enter the definition..."
-                  rows={3}
-                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm transition focus:outline-none focus:ring-2 ${
-                    errors.definition
-                      ? "border-red-300 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-indigo-500"
-                  }`}
-                />
-                {errors.definition && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.definition}
-                  </p>
-                )}
-              </div>
-
-              {/* Vietnamese Field */}
-              <div>
-                <label
-                  htmlFor="vietnamese"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Vietnamese <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="vietnamese"
-                  name="vietnamese"
-                  value={formData.vietnamese}
-                  onChange={handleInputChange}
-                  placeholder="Enter concise Vietnamese translation..."
-                  rows={2}
-                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm transition focus:outline-none focus:ring-2 ${
-                    errors.vietnamese
-                      ? "border-red-300 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-indigo-500"
-                  }`}
-                />
-                {errors.vietnamese && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.vietnamese}
-                  </p>
-                )}
-              </div>
-
-              {/* Form Actions */}
-              <div className="mt-6 flex gap-3">
-                <button
-                  type="button"
-                  onClick={closeFormDialog}
-                  disabled={isSubmitting}
-                  className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {isSubmitting
-                    ? editingIndex === null
-                      ? "Adding..."
-                      : "Saving..."
-                    : editingIndex === null
-                      ? "Add Vocabulary"
-                      : "Save Changes"}
-                </button>
-              </div>
-
-              {formError ? (
-                <p className="text-sm text-red-600">{formError}</p>
-              ) : null}
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {/* Delete Vocabulary Dialog */}
-      <div
-        className={`fixed inset-0 z-60 ${
-          deleteTarget ? "pointer-events-auto" : "pointer-events-none"
-        }`}
-        aria-hidden={!deleteTarget}
-      >
-        <button
-          type="button"
-          aria-label="Close delete vocabulary dialog"
-          onClick={() => {
-            if (isDeleting) {
-              return;
-            }
-
-            setDeleteTarget(null);
-            setDeleteError(null);
-          }}
-          className={`absolute inset-0 bg-black/40 transition-opacity ${
-            deleteTarget ? "opacity-100" : "opacity-0"
-          }`}
-        />
-
-        <div className="absolute inset-0 flex items-center justify-center p-4">
-          <div
-            className={`w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-5 shadow-lg transition-opacity ${
-              deleteTarget ? "opacity-100" : "opacity-0"
-            }`}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Delete vocabulary confirmation dialog"
-          >
-            <h3 className="text-base font-semibold text-gray-900">
-              Delete vocabulary?
-            </h3>
-            <p className="mt-2 text-sm text-gray-600">
-              This will remove{" "}
-              <span className="font-medium text-gray-900">
-                {deleteTarget?.word}
-              </span>{" "}
-              from this passage.
-            </p>
-
-            {deleteError ? (
-              <p className="mt-3 text-sm text-red-600">{deleteError}</p>
-            ) : null}
-
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={() => {
-                  setDeleteTarget(null);
-                  setDeleteError(null);
-                }}
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={handleConfirmDelete}
-                className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DeleteVocabularyDialog
+        open={Boolean(deleteTarget)}
+        word={deleteTarget?.word ?? null}
+        isDeleting={isDeleting}
+        deleteError={deleteError}
+        onClose={() => {
+          setDeleteTarget(null);
+          setDeleteError(null);
+        }}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 }

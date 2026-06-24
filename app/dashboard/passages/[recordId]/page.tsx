@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { PassagePanel } from "@/app/dashboard/passages/[recordId]/passage-panel";
+import { PassagePanel } from "@/app/dashboard/passages/[recordId]/PassagePanel";
+import { PassageDrawer } from "@/app/dashboard/passages/[recordId]/PassageDrawer";
 import {
   VocabularyPanel,
   type DetailVocabularyItem,
@@ -217,24 +218,6 @@ export default function PassageDetailPage() {
 
   const showNoMatch = Boolean(selectedWord) && highlightedPassage.length === 0;
 
-  useEffect(() => {
-    if (!isPassageDrawerOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsPassageDrawerOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isPassageDrawerOpen]);
-
   if (detailQuery.isLoading) {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-1 px-6 py-10">
@@ -289,7 +272,7 @@ export default function PassageDetailPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
+    <main className="mx-auto flex w-full max-w-[100rem] flex-1 flex-col gap-6 px-6 py-10">
       <header>
         <h1
           className="truncate text-3xl font-semibold tracking-tight text-gray-900"
@@ -302,22 +285,22 @@ export default function PassageDetailPage() {
         </p>
       </header>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        <div className="hidden md:block">
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="hidden lg:block">
           <PassagePanel
             passage={detailQuery.data.passage}
+            vocabularyWords={detailQuery.data.vocabularyList.map(
+              (item) => item.word,
+            )}
             selectedWord={selectedWord}
             highlightedRanges={highlightedPassage}
             showNoMatch={showNoMatch}
-            onSelectWord={(word) => {
-              setSelectedWord(word);
-            }}
             onGenerateVocabularyDraft={handleGenerateVocabularyDraft}
           />
         </div>
 
         <div>
-          <div className="mb-3 md:hidden">
+          <div className="mb-3 lg:hidden">
             <button
               type="button"
               onClick={() => setIsPassageDrawerOpen(true)}
@@ -335,7 +318,7 @@ export default function PassageDetailPage() {
                 currentWord === word ? null : word,
               );
 
-              if (window.matchMedia("(max-width: 767px)").matches) {
+              if (window.matchMedia("(max-width: 1023px)").matches) {
                 setIsPassageDrawerOpen(true);
               }
             }}
@@ -347,51 +330,21 @@ export default function PassageDetailPage() {
         </div>
       </section>
 
-      <div
-        className={`fixed inset-0 z-50 md:hidden ${
-          isPassageDrawerOpen ? "pointer-events-auto" : "pointer-events-none"
-        }`}
-        aria-hidden={!isPassageDrawerOpen}
-      >
-        <button
-          type="button"
-          aria-label="Close passage drawer"
-          onClick={() => setIsPassageDrawerOpen(false)}
-          className={`absolute inset-0 bg-black/40 transition-opacity ${
-            isPassageDrawerOpen ? "opacity-100" : "opacity-0"
-          }`}
-        />
-
-        <aside
-          className={`absolute left-0 top-0 h-full w-[min(90vw,28rem)] overflow-y-auto border-r border-gray-200 bg-gray-50 p-4 shadow-xl transition-transform ${
-            isPassageDrawerOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Passage drawer"
-        >
-          <div className="mb-3 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setIsPassageDrawerOpen(false)}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Close
-            </button>
-          </div>
-
-          <PassagePanel
-            passage={detailQuery.data.passage}
-            selectedWord={selectedWord}
-            highlightedRanges={highlightedPassage}
-            showNoMatch={showNoMatch}
-            onSelectWord={(word) => {
-              setSelectedWord(word);
-            }}
-            onGenerateVocabularyDraft={handleGenerateVocabularyDraft}
-          />
-        </aside>
-      </div>
+      <PassageDrawer
+        open={isPassageDrawerOpen}
+        onOpenChange={(open) => {
+          setIsPassageDrawerOpen(open);
+        }}
+        passage={detailQuery.data.passage}
+        vocabularyWords={detailQuery.data.vocabularyList.map(
+          (item) => item.word,
+        )}
+        selectedWord={selectedWord}
+        highlightedRanges={highlightedPassage}
+        showNoMatch={showNoMatch}
+        onGenerateVocabularyDraft={handleGenerateVocabularyDraft}
+        title={detailQuery.data.title}
+      />
 
       <div className="sr-only" aria-live="polite">
         {draftSeed ? `Vocabulary draft ready for ${draftSeed.word}.` : null}
