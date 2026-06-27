@@ -44,27 +44,36 @@ export function PassagePanel({
       return;
     }
 
-    const target = firstMatchRef.current;
-    const container = passageScrollRef.current;
+    // rAF gives the drawer time to finish its opening animation before we
+    // attempt to scroll so that layout measurements are accurate.
+    const raf = requestAnimationFrame(() => {
+      const target = firstMatchRef.current;
+      const container = passageScrollRef.current;
 
-    if (
-      !target ||
-      !container ||
-      container.scrollHeight <= container.clientHeight
-    ) {
-      return;
-    }
+      if (!target || !container) {
+        return;
+      }
 
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const targetOffsetInContainer =
-      targetRect.top - containerRect.top + container.scrollTop;
-    const scrollTo =
-      targetOffsetInContainer -
-      container.clientHeight / 2 +
-      targetRect.height / 2;
+      if (container.scrollHeight <= container.clientHeight) {
+        // On mobile the inner div is not scrollable; scroll the nearest
+        // scrollable ancestor (e.g. the Drawer.Content) instead.
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
 
-    container.scrollTo({ top: Math.max(0, scrollTo), behavior: "smooth" });
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const targetOffsetInContainer =
+        targetRect.top - containerRect.top + container.scrollTop;
+      const scrollTo =
+        targetOffsetInContainer -
+        container.clientHeight / 2 +
+        targetRect.height / 2;
+
+      container.scrollTo({ top: Math.max(0, scrollTo), behavior: "smooth" });
+    });
+
+    return () => cancelAnimationFrame(raf);
   }, [highlightedRanges.length, selectedWord]);
 
   useEffect(() => {
