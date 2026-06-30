@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { VocabularyDraft } from "@/lib/word-actions/types";
+import { useSpeech } from "./PassagePanel/useSpeech";
 import {
   VocabularyFormDialog,
   type VocabularyFormData,
@@ -57,6 +58,8 @@ export function VocabularyPanel({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { speak } = useSpeech();
 
   const resetForm = () => {
     setFormData({
@@ -259,6 +262,25 @@ export function VocabularyPanel({
                       </button>
 
                       <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => speak(item.word)}
+                          aria-label={`Pronounce ${item.word}`}
+                          className="rounded-md p-1.5 text-gray-500 transition hover:bg-indigo-100 hover:text-indigo-700"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            className="h-5 w-5"
+                            aria-hidden="true"
+                          >
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                          </svg>
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleOpenEditDialog(item, index)}

@@ -128,7 +128,7 @@ export function DashboardNavbar() {
                 <Link
                   href="/dashboard"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+                  className="flex items-center gap-2 px-4 py-2 text-md text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700"
                 >
                   {/* Home Icon */}
                   <svg
@@ -155,7 +155,7 @@ export function DashboardNavbar() {
                 <Link
                   href="/dashboard/history"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+                  className="flex items-center gap-2 px-4 py-2 text-md text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700"
                 >
                   <svg
                     className="h-4 w-4"

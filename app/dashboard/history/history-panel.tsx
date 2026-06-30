@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ApiClientError } from "@/lib/query-hooks/api-client";
 import { DeletePassageDialog } from "@/app/dashboard/DeletePassageDialog";
+import { useSpeech } from "@/app/dashboard/passages/[recordId]/PassagePanel/useSpeech";
 import {
   useDeletePassageHistoryMutation,
   usePassageHistoryQuery,
@@ -16,6 +17,7 @@ export function HistoryPanel() {
   const passagesQuery = usePassageHistoryQuery();
   const vocabularyQuery = useVocabularyHistoryQuery();
   const deletePassageMutation = useDeletePassageHistoryMutation();
+  const { speak } = useSpeech();
 
   const [passageSearch, setPassageSearch] = useState("");
   const [passagePage, setPassagePage] = useState(1);
@@ -242,10 +244,27 @@ export function HistoryPanel() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold text-gray-900">{item.word}</p>
-                  <span className="text-sm text-gray-500">
-                    {item.occurrenceCount} hit
-                    {item.occurrenceCount > 1 ? "s" : ""}
-                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Play pronunciation of ${item.word}`}
+                    onClick={() => speak(item.word)}
+                    className="rounded-md p-1.5 text-gray-500 transition hover:bg-indigo-100 hover:text-indigo-700"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-5 w-5"
+                      aria-hidden="true"
+                    >
+                      <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                    </svg>
+                  </button>
                 </div>
                 <p className="mt-1 text-sm text-gray-700">{item.definition}</p>
                 <p className="mt-1 text-sm text-gray-700">{item.vietnamese}</p>
