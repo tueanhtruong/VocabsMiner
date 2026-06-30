@@ -1,12 +1,8 @@
 "use client";
 
-import { ChakraProvider, createSystem, defaultConfig } from "@chakra-ui/react";
+import { MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
-
-const chakraSystem = createSystem(defaultConfig, {
-  preflight: false,
-});
 
 type ProvidersProps = {
   children: ReactNode;
@@ -28,8 +24,8 @@ export function Providers({ children }: ProvidersProps) {
   );
 
   return (
-    <ChakraProvider value={chakraSystem}>
+    <MantineProvider>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </ChakraProvider>
+    </MantineProvider>
   );
 }

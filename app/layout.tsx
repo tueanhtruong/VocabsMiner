@@ -1,5 +1,7 @@
+import "@mantine/core/styles.css";
 import type { Metadata } from "next";
 import { Noto_Sans } from "next/font/google";
+import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import { Providers } from "@/app/providers";
 import "./globals.css";
 
@@ -22,11 +24,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      {...mantineHtmlProps}
       className={`${notoSans.variable} ${notoSans.className} h-full antialiased`}
-      suppressHydrationWarning
     >
-      <head suppressHydrationWarning />
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <head>
+        <ColorSchemeScript />
+      </head>
+      <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>
     </html>

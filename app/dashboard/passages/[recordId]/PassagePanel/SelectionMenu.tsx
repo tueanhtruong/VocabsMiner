@@ -1,4 +1,5 @@
-import { Menu, Portal } from "@chakra-ui/react";
+import { useEffect, useRef } from "react";
+import { Menu } from "@mantine/core";
 
 import { PopupState } from "./types";
 
@@ -14,6 +15,28 @@ type SelectionMenuProps = {
   onGenerateDraft: () => void;
 };
 
+function findFixedContainingBlock(element: HTMLElement): HTMLElement | null {
+  let current = element.parentElement;
+
+  while (current) {
+    const style = window.getComputedStyle(current);
+    const hasTransformContainingBlock =
+      style.transform !== "none" ||
+      style.perspective !== "none" ||
+      style.filter !== "none" ||
+      style.backdropFilter !== "none" ||
+      style.willChange.includes("transform");
+
+    if (hasTransformContainingBlock) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
 export function SelectionMenu({
   popupState,
   anchorEl,
@@ -25,105 +48,114 @@ export function SelectionMenu({
   onClose,
   onGenerateDraft,
 }: SelectionMenuProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Position the hidden trigger at the anchor element's location so
+  // Floating UI can place the dropdown relative to it.
+  useEffect(() => {
+    if (anchorEl && triggerRef.current) {
+      const rect = anchorEl.getBoundingClientRect();
+      const containingBlock = findFixedContainingBlock(triggerRef.current);
+
+      if (containingBlock) {
+        const containingBlockRect = containingBlock.getBoundingClientRect();
+
+        triggerRef.current.style.top = `${
+          rect.bottom - containingBlockRect.top + containingBlock.scrollTop
+        }px`;
+        triggerRef.current.style.left = `${
+          rect.left - containingBlockRect.left + containingBlock.scrollLeft
+        }px`;
+        return;
+      }
+
+      triggerRef.current.style.top = `${rect.bottom}px`;
+      triggerRef.current.style.left = `${rect.left}px`;
+    }
+  }, [anchorEl]);
+
   if (!anchorEl) {
     return null;
   }
 
   return (
-    <Menu.Root
-      open={Boolean(popupState && anchorEl)}
-      onOpenChange={(details) => {
-        if (!details.open) {
+    <Menu
+      opened={Boolean(popupState && anchorEl)}
+      onChange={(opened) => {
+        if (!opened) {
           onClose();
         }
       }}
-      positioning={{
-        strategy: "fixed",
-        placement: "bottom-start",
-        gutter: 8,
-        getAnchorElement: () => anchorEl,
-      }}
+      position="bottom-start"
+      floatingStrategy="fixed"
+      offset={8}
+      withinPortal
+      zIndex={9999}
     >
-      <Menu.Trigger asChild>
-        <span
+      <Menu.Target>
+        <button
+          ref={triggerRef}
           aria-hidden
+          tabIndex={-1}
           style={{
             position: "fixed",
-            left: -9999,
-            top: -9999,
+            top: 0,
+            left: 0,
             width: 0,
             height: 0,
+            padding: 0,
+            border: "none",
+            background: "none",
             pointerEvents: "none",
+            overflow: "hidden",
           }}
         />
-      </Menu.Trigger>
-      <Portal>
-        <Menu.Positioner zIndex="modal">
-          <Menu.Content
-            minW="18rem"
-            maxW="32rem"
-            rounded="xl"
-            borderWidth="1px"
-            borderColor="gray.200"
-            bg="white"
-            p="2"
-            shadow="2xl"
-          >
-            <Menu.Item
-              value="translated-word"
-              cursor="default"
-              disabled={isTranslating}
-              bg="white"
-              color="cyan.950"
-              fontSize="md"
-              fontWeight="medium"
-              py="2"
-            >
-              {isTranslating
-                ? "Translating..."
-                : translation
-                  ? translation
-                  : "Translate to Vietnamese"}
-            </Menu.Item>
+      </Menu.Target>
 
-            <Menu.Item
-              value="create-vocabulary-draft"
-              closeOnSelect={false}
-              disabled={isGeneratingDraft || isSelectedWordDuplicated}
-              onSelect={onGenerateDraft}
-              rounded="lg"
-              borderWidth="1px"
-              borderColor="gray.200"
-              bg="white"
-              color="gray.900"
-              fontSize="md"
-              fontWeight="medium"
-              py="2"
-              mt="2"
-              _hover={{ bg: "gray.50" }}
-              _disabled={{ opacity: 0.5 }}
-            >
-              {isSelectedWordDuplicated
-                ? "Word already exists in this passage vocabulary"
-                : isGeneratingDraft
-                  ? "Preparing vocabulary data..."
-                  : "Add vocabulary to the list"}
-            </Menu.Item>
+      <Menu.Dropdown className="min-w-72 max-w-[32rem] rounded-xl border border-gray-200 bg-white p-2 shadow-2xl">
+        <Menu.Item
+          closeMenuOnClick={false}
+          disabled={isTranslating}
+          className="cursor-default rounded-lg border border-gray-200 bg-white px-2 py-2 text-md font-medium text-cyan-950 hover:bg-white"
+        >
+          <p className="text-md font-medium text-gray-900">
+            {isTranslating
+              ? "Translating..."
+              : translation
+                ? translation
+                : "Translate to Vietnamese"}
+          </p>
+        </Menu.Item>
 
-            {isSelectedWordDuplicated ? (
-              <p className="px-2 pt-2 text-xs text-amber-600">
-                The selected word is already in your vocabulary list.
-              </p>
-            ) : null}
+        <Menu.Item
+          closeMenuOnClick={false}
+          disabled={isGeneratingDraft || isSelectedWordDuplicated}
+          onClick={
+            !isGeneratingDraft && !isSelectedWordDuplicated
+              ? onGenerateDraft
+              : undefined
+          }
+          className="mt-2 rounded-lg border border-gray-200 bg-white px-2 py-2 text-lg font-medium text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+        >
+          <p className="text-md font-medium text-gray-900">
+            {isSelectedWordDuplicated
+              ? "Word already exists in this passage vocabulary"
+              : isGeneratingDraft
+                ? "Preparing vocabulary data..."
+                : "Add vocabulary to the list"}
+          </p>
+        </Menu.Item>
 
-            {translationError ? (
-              <p className="px-2 pt-2 text-xs text-red-600">
-                {translationError}
-              </p>
-            ) : null}
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
+        {isSelectedWordDuplicated ? (
+          <p className="px-2 pt-2 text-sm text-amber-600">
+            The selected word is already in your vocabulary list.
+          </p>
+        ) : null}
+
+        {translationError ? (
+          <p className="px-2 pt-2 text-xs text-red-600">{translationError}</p>
+        ) : null}
+      </Menu.Dropdown>
+    </Menu>
   );
 }
