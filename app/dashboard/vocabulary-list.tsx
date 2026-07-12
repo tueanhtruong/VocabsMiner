@@ -96,7 +96,11 @@ export function VocabularyList() {
         className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
       />
 
-      {error ? (
+      {passagesQuery.isLoading ? (
+        <div className="flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+        </div>
+      ) : error ? (
         <p className="text-sm text-red-600">{error}</p>
       ) : (
         <ul className="space-y-3">

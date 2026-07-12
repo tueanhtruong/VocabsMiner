@@ -132,58 +132,66 @@ export function HistoryPanel() {
             placeholder="Search passages..."
             className="mt-3 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
           />
-          <ul className="mt-3 space-y-2">
-            {passages.map((item) => (
-              <li
-                key={item.recordId}
-                className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <Link
-                    href={`/dashboard/passages/${item.recordId}`}
-                    className="min-w-0 flex-1"
-                  >
-                    <p className="text-sm font-semibold text-gray-900">
-                      {item.title}
-                    </p>
-                    <p className="text-sm text-gray-700">{item.previewText}</p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {new Date(item.createdAt).toLocaleString()} •{" "}
-                      {item.vocabularyCount} word
-                      {item.vocabularyCount > 1 ? "s" : ""}
-                    </p>
-                  </Link>
-                  <button
-                    type="button"
-                    aria-label={`Delete ${item.title}`}
-                    onClick={() => {
-                      setDeleteError(null);
-                      setDeleteTarget({
-                        recordId: item.recordId,
-                        title: item.title,
-                      });
-                    }}
-                    className="rounded-md p-1.5 text-gray-500 transition hover:bg-red-100 hover:text-red-700"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-5 w-5"
-                      aria-hidden="true"
+          {passagesQuery.isLoading ? (
+            <div className="mt-3 flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+            </div>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {passages.map((item) => (
+                <li
+                  key={item.recordId}
+                  className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <Link
+                      href={`/dashboard/passages/${item.recordId}`}
+                      className="min-w-0 flex-1"
                     >
-                      <path d="M4 7h16" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
-                      <path d="M6 7l1 12h10l1-12" />
-                      <path d="M9 7V5h6v2" />
-                    </svg>
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {item.title}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {item.previewText}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {new Date(item.createdAt).toLocaleString()} •{" "}
+                        {item.vocabularyCount} word
+                        {item.vocabularyCount > 1 ? "s" : ""}
+                      </p>
+                    </Link>
+                    <button
+                      type="button"
+                      aria-label={`Delete ${item.title}`}
+                      onClick={() => {
+                        setDeleteError(null);
+                        setDeleteTarget({
+                          recordId: item.recordId,
+                          title: item.title,
+                        });
+                      }}
+                      className="rounded-md p-1.5 text-gray-500 transition hover:bg-red-100 hover:text-red-700"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-5 w-5"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 7h16" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M6 7l1 12h10l1-12" />
+                        <path d="M9 7V5h6v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {!passagesQuery.isLoading && !filteredPassages.length ? (
             <p className="mt-3 text-sm text-gray-600">
@@ -236,44 +244,54 @@ export function HistoryPanel() {
             placeholder="Search vocabulary..."
             className="mt-3 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
           />
-          <ul className="mt-3 space-y-2">
-            {vocabulary.map((item) => (
-              <li
-                key={item.vocabularyId}
-                className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold text-gray-900">{item.word}</p>
-                  <button
-                    type="button"
-                    aria-label={`Play pronunciation of ${item.word}`}
-                    onClick={() => speak(item.word)}
-                    className="rounded-md p-1.5 text-gray-500 transition hover:bg-indigo-100 hover:text-indigo-700"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-5 w-5"
-                      aria-hidden="true"
+          {vocabularyQuery.isLoading ? (
+            <div className="mt-3 flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+            </div>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {vocabulary.map((item) => (
+                <li
+                  key={item.vocabularyId}
+                  className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-gray-900">{item.word}</p>
+                    <button
+                      type="button"
+                      aria-label={`Play pronunciation of ${item.word}`}
+                      onClick={() => speak(item.word)}
+                      className="rounded-md p-1.5 text-gray-500 transition hover:bg-indigo-100 hover:text-indigo-700"
                     >
-                      <path d="M11 5L6 9H2v6h4l5 4V5z" />
-                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                    </svg>
-                  </button>
-                </div>
-                <p className="mt-1 text-sm text-gray-700">{item.definition}</p>
-                <p className="mt-1 text-sm text-gray-700">{item.vietnamese}</p>
-                <p className="mt-1 text-sm text-gray-500">
-                  Last seen {new Date(item.lastSeenAt).toLocaleString()}
-                </p>
-              </li>
-            ))}
-          </ul>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-5 w-5"
+                        aria-hidden="true"
+                      >
+                        <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-700">
+                    {item.definition}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-700">
+                    {item.vietnamese}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Last seen {new Date(item.lastSeenAt).toLocaleString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {!vocabularyQuery.isLoading && !filteredVocabulary.length ? (
             <p className="mt-3 text-sm text-gray-600">
