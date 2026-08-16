@@ -2,7 +2,7 @@
 
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/003-word-action-menu/plan.md
+at specs/004-background-vocabulary-extraction/plan.md
 
 <!-- SPECKIT END -->
 
