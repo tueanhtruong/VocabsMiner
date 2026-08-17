@@ -70,7 +70,7 @@ export function DashboardNavbar() {
   const isHistoryActive = pathname.startsWith("/dashboard/history");
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-sm">
+    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 pt-[max(0px,env(safe-area-inset-top))] backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-[100rem] items-center justify-between px-6">
         {/* Brand */}
         <Link
