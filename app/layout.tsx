@@ -1,5 +1,5 @@
 import "@mantine/core/styles.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans } from "next/font/google";
 import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import { Providers } from "@/app/providers";
@@ -11,9 +11,28 @@ const notoSans = Noto_Sans({
   weight: ["400", "500", "700"],
 });
 export const metadata: Metadata = {
+  applicationName: "VocabMiner",
   title: "VocabMiner - IELTS Vocabulary Extraction Tool",
   description:
     "Stop pausing your IELTS practice to look up words. VocabMiner extracts, defines, and contextualizes high-impact academic vocabulary from your reading passages.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "VocabMiner",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#111827",
 };
 
 export default function RootLayout({

@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# Serwist generated service worker
+/public/sw*
+/public/swe-worker*
+
 # production
 /build
 /dist

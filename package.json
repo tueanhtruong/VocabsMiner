@@ -4,14 +4,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@mantine/core": "^9.0.0",
     "@mantine/hooks": "^9.0.0",
+    "@serwist/next": "^9.5.12",
     "@tanstack/react-query": "^5.101.0",
     "@vitalets/google-translate-api": "^9.2.1",
     "firebase": "^12.14.0",
@@ -23,13 +24,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "postcss-preset-mantine": "^1.0.0",
-    "postcss-simple-vars": "^7.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "postcss-preset-mantine": "^1.0.0",
+    "postcss-simple-vars": "^7.0.0",
+    "serwist": "^9.5.12",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

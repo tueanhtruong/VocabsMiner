@@ -1,4 +1,10 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+import { spawnSync } from "node:child_process";
+
+const revision =
+  spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" }).stdout.trim() ||
+  "offline-v1";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["firebase-admin"],
@@ -34,4 +40,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withSerwist = withSerwistInit({
+  additionalPrecacheEntries: [{ url: "/~offline", revision }],
+  cacheOnNavigation: true,
+  disable: process.env.NODE_ENV === "development",
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+});
+
+export default withSerwist(nextConfig);
