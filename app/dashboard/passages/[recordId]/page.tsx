@@ -47,7 +47,7 @@ export default function PassageDetailPage() {
     enabled: Boolean(params.recordId),
     refetchOnMount: "always",
     refetchInterval: (query) =>
-      query.state.data?.status === "pending" ? 2000 : false,
+      query.state.data?.status === "pending" ? 5000 : false,
   });
 
   const handleAddVocabulary = async (formData: {
@@ -76,11 +76,11 @@ export default function PassageDetailPage() {
         ["passage-detail", params.recordId],
         (oldData: PassageDetailResponse | undefined) => {
           if (!oldData) return oldData;
-            return {
-              ...oldData,
-              vocabularyList: [response.vocabulary, ...oldData.vocabularyList],
-              vocabularyCount: oldData.vocabularyCount + 1,
-            };
+          return {
+            ...oldData,
+            vocabularyList: [response.vocabulary, ...oldData.vocabularyList],
+            vocabularyCount: oldData.vocabularyCount + 1,
+          };
         },
       );
     } catch (error) {
@@ -315,7 +315,9 @@ export default function PassageDetailPage() {
 
       {isPending ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
-          <h2 className="font-semibold">Vocabulary extraction is in progress</h2>
+          <h2 className="font-semibold">
+            Vocabulary extraction is in progress
+          </h2>
           <p className="mt-1 text-sm">
             You can leave this page. It will refresh automatically while the
             background worker processes your saved passage.
@@ -325,7 +327,9 @@ export default function PassageDetailPage() {
 
       {detailQuery.data.status === "error" ? (
         <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-950">
-          <h2 className="font-semibold">Vocabulary extraction could not finish</h2>
+          <h2 className="font-semibold">
+            Vocabulary extraction could not finish
+          </h2>
           <p className="mt-1 text-sm">
             {detailQuery.data.errorReason ??
               "The extraction service is temporarily unavailable."}
