@@ -13,6 +13,7 @@ import {
 import { ApiClientError, requestJson } from "@/lib/query-hooks/api-client";
 import { findHighlightRanges } from "@/app/dashboard/passages/[recordId]/highlight-utils";
 import type { VocabularyDraft } from "@/lib/word-actions/types";
+import { useRetryExtractionMutation } from "@/lib/query-hooks/extraction";
 
 type PassageDetailResponse = {
   recordId: string;
@@ -20,6 +21,9 @@ type PassageDetailResponse = {
   passage: string;
   vocabularyList: DetailVocabularyItem[];
   createdAt: string;
+  vocabularyCount: number;
+  status: "pending" | "completed" | "error";
+  errorReason?: string;
 };
 
 export default function PassageDetailPage() {
@@ -29,6 +33,7 @@ export default function PassageDetailPage() {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [isPassageDrawerOpen, setIsPassageDrawerOpen] = useState(false);
   const [draftSeed, setDraftSeed] = useState<VocabularyDraft | null>(null);
+  const retryMutation = useRetryExtractionMutation(params.recordId ?? "");
 
   const detailQuery = useQuery({
     queryKey: ["passage-detail", params.recordId],
@@ -40,6 +45,9 @@ export default function PassageDetailPage() {
       });
     },
     enabled: Boolean(params.recordId),
+    refetchOnMount: "always",
+    refetchInterval: (query) =>
+      query.state.data?.status === "pending" ? 2000 : false,
   });
 
   const handleAddVocabulary = async (formData: {
@@ -68,10 +76,11 @@ export default function PassageDetailPage() {
         ["passage-detail", params.recordId],
         (oldData: PassageDetailResponse | undefined) => {
           if (!oldData) return oldData;
-          return {
-            ...oldData,
-            vocabularyList: [response.vocabulary, ...oldData.vocabularyList],
-          };
+            return {
+              ...oldData,
+              vocabularyList: [response.vocabulary, ...oldData.vocabularyList],
+              vocabularyCount: oldData.vocabularyCount + 1,
+            };
         },
       );
     } catch (error) {
@@ -169,6 +178,7 @@ export default function PassageDetailPage() {
             vocabularyList: oldData.vocabularyList.filter(
               (_, itemIndex) => itemIndex !== index,
             ),
+            vocabularyCount: Math.max(oldData.vocabularyCount - 1, 0),
           };
         },
       );
@@ -271,6 +281,9 @@ export default function PassageDetailPage() {
     return null;
   }
 
+  const isCompleted = detailQuery.data.status === "completed";
+  const isPending = detailQuery.data.status === "pending";
+
   return (
     <main className="mx-auto flex w-full max-w-[100rem] flex-1 flex-col gap-6 px-6 py-10">
       <header>
@@ -281,9 +294,59 @@ export default function PassageDetailPage() {
           {detailQuery.data.title}
         </h1>
         <p className="text-sm text-gray-600">
-          Saved {new Date(detailQuery.data.createdAt).toLocaleString()}
+          Saved {new Date(detailQuery.data.createdAt).toLocaleString()} ·{" "}
+          <span
+            className={
+              isPending
+                ? "font-semibold text-amber-700"
+                : isCompleted
+                  ? "font-semibold text-emerald-700"
+                  : "font-semibold text-red-700"
+            }
+          >
+            {isPending
+              ? "Extraction pending"
+              : isCompleted
+                ? `${detailQuery.data.vocabularyCount} word${detailQuery.data.vocabularyCount === 1 ? "" : "s"}`
+                : "Extraction failed"}
+          </span>
         </p>
       </header>
+
+      {isPending ? (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+          <h2 className="font-semibold">Vocabulary extraction is in progress</h2>
+          <p className="mt-1 text-sm">
+            You can leave this page. It will refresh automatically while the
+            background worker processes your saved passage.
+          </p>
+        </section>
+      ) : null}
+
+      {detailQuery.data.status === "error" ? (
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-950">
+          <h2 className="font-semibold">Vocabulary extraction could not finish</h2>
+          <p className="mt-1 text-sm">
+            {detailQuery.data.errorReason ??
+              "The extraction service is temporarily unavailable."}
+          </p>
+          <button
+            type="button"
+            onClick={() => retryMutation.mutate()}
+            disabled={retryMutation.isPending}
+            className="mt-3 rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {retryMutation.isPending ? "Retrying..." : "Retry extraction"}
+          </button>
+          {retryMutation.error ? (
+            <p className="mt-2 text-sm text-red-700">
+              {retryMutation.error instanceof ApiClientError
+                ? retryMutation.error.message
+                : "Unable to retry extraction."}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="hidden lg:block">
@@ -310,23 +373,36 @@ export default function PassageDetailPage() {
             </button>
           </div>
 
-          <VocabularyPanel
-            vocabularyList={detailQuery.data.vocabularyList}
-            selectedWord={selectedWord}
-            onSelectWord={(word) => {
-              setSelectedWord((currentWord) =>
-                currentWord === word ? null : word,
-              );
+          {isCompleted ? (
+            <VocabularyPanel
+              vocabularyList={detailQuery.data.vocabularyList}
+              selectedWord={selectedWord}
+              onSelectWord={(word) => {
+                setSelectedWord((currentWord) =>
+                  currentWord === word ? null : word,
+                );
 
-              if (window.matchMedia("(max-width: 1023px)").matches) {
-                setIsPassageDrawerOpen(true);
-              }
-            }}
-            onAddVocabulary={handleAddVocabulary}
-            onUpdateVocabulary={handleUpdateVocabulary}
-            onDeleteVocabulary={handleDeleteVocabulary}
-            draftSeed={draftSeed}
-          />
+                if (window.matchMedia("(max-width: 1023px)").matches) {
+                  setIsPassageDrawerOpen(true);
+                }
+              }}
+              onAddVocabulary={handleAddVocabulary}
+              onUpdateVocabulary={handleUpdateVocabulary}
+              onDeleteVocabulary={handleDeleteVocabulary}
+              draftSeed={draftSeed}
+            />
+          ) : (
+            <section className="rounded-2xl border border-gray-200 bg-white p-5">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Vocabulary
+              </h2>
+              <p className="mt-3 text-sm text-gray-600">
+                {isPending
+                  ? "Vocabulary will appear here when extraction completes."
+                  : "Retry extraction to generate vocabulary for this passage."}
+              </p>
+            </section>
+          )}
         </div>
       </section>
 

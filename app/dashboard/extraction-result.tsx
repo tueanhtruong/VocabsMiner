@@ -1,62 +1,25 @@
-type ExtractionVocabularyItem = {
-  word: string;
-  type: string;
-  phonetic: string;
-  definition: string;
-  vietnamese: string;
-};
-
 type ExtractionResultProps = {
-  vocabulary: ExtractionVocabularyItem[];
   isSubmitted: boolean;
+  isPending: boolean;
 };
 
 export function ExtractionResult({
-  vocabulary,
   isSubmitted,
+  isPending,
 }: ExtractionResultProps) {
   if (!isSubmitted) {
     return null;
   }
 
-  if (!vocabulary.length) {
-    return (
-      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-        <h2 className="text-base font-semibold text-gray-900">
-          No vocabulary found in this passage
-        </h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Your passage is still saved. You can open it from Passage History and
-          try another extraction with a denser academic text.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <section className="space-y-3">
-      <h2 className="text-lg font-semibold text-gray-900">
-        Extraction Results
+    <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+      <h2 className="text-base font-semibold text-indigo-950">
+        {isPending ? "Saving passage..." : "Extraction started"}
       </h2>
-      <ul className="space-y-3">
-        {vocabulary.map((item, index) => (
-          <li
-            key={`${item.word}-${index}`}
-            className="rounded-2xl border border-gray-200 bg-white p-4"
-          >
-            <h3 className="text-base font-semibold text-gray-900">
-              {item.word}
-            </h3>
-            <p className="mt-1 text-sm uppercase tracking-wide text-gray-500">
-              {item.type} {item.phonetic ? `• ${item.phonetic}` : ""}
-            </p>
-            <p className="mt-1 text-sm text-gray-700">{item.definition}</p>
-            <p className="mt-2 text-sm leading-5 text-gray-500">
-              {item.vietnamese}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </section>
+      <p className="mt-1 text-sm text-indigo-900">
+        Your passage is saved immediately. Vocabulary extraction continues in
+        the background, and the result will appear in Passage History.
+      </p>
+    </div>
   );
 }

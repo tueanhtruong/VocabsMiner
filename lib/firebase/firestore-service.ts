@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { FieldValue, Timestamp, type Query } from "firebase-admin/firestore";
 
@@ -35,6 +35,8 @@ export type VocabularyItemInput = {
   vietnamese: string;
 };
 
+export type PassageStatus = "pending" | "completed" | "error";
+
 export type StoredVocabularyItem = {
   vocabularyId: string;
   uid: string;
@@ -58,6 +60,9 @@ export type PassageHistoryItem = {
   previewText: string;
   passageHash: string;
   vocabularyCount: number;
+  status: PassageStatus;
+  errorReason?: string;
+  activeAttemptId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -78,6 +83,8 @@ export type PassageApiItem = {
   previewText: string;
   createdAt: string;
   vocabularyCount: number;
+  status: PassageStatus;
+  errorReason?: string;
 };
 
 export type PassageDetailApiItem = {
@@ -86,6 +93,9 @@ export type PassageDetailApiItem = {
   passage: string;
   vocabularyList: VocabularyItemInput[];
   createdAt: string;
+  vocabularyCount: number;
+  status: PassageStatus;
+  errorReason?: string;
 };
 
 const defaultVocabularyLimit = 500;
@@ -155,6 +165,30 @@ function normalizeVocabularyItem(item: Partial<VocabularyItemInput>) {
     definition: (item.definition ?? "").trim(),
     vietnamese: (item.vietnamese ?? "").trim(),
   } satisfies VocabularyItemInput;
+}
+
+function getPassageStatus(data: Partial<PassageHistoryItem>): PassageStatus {
+  if (
+    data.status === "pending" ||
+    data.status === "completed" ||
+    data.status === "error"
+  ) {
+    return data.status;
+  }
+
+  // Records written before background extraction are completed records.
+  return "completed";
+}
+
+function getPassageVocabularyList(data: Partial<PassageHistoryItem>) {
+  return (data.vocabularyList ?? []).map((item) => normalizeVocabularyItem(item));
+}
+
+function getPassageVocabularyCount(
+  status: PassageStatus,
+  vocabularyList: VocabularyItemInput[],
+) {
+  return status === "completed" ? vocabularyList.length : 0;
 }
 
 function encodeCursor(payload: Record<string, string | number>) {
@@ -270,7 +304,8 @@ export async function recordPassageHistory(params: {
         vocabularyList: normalizedVocabulary,
         previewText: buildPassagePreview(params.passageText),
         passageHash: hashPassage(params.passageText),
-        vocabularyCount: Math.max(params.vocabularyCount, 0),
+        vocabularyCount: normalizedVocabulary.length,
+        status: "completed",
         createdAt,
         updatedAt,
       } satisfies PassageHistoryItem,
@@ -286,6 +321,198 @@ export async function recordPassageHistory(params: {
       },
       { merge: true },
     );
+  });
+}
+
+export async function createPendingPassage(params: {
+  uid: string;
+  recordId: string;
+  title: string;
+  passageText: string;
+  createdAt?: Timestamp;
+}) {
+  const createdAt = params.createdAt ?? Timestamp.now();
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId,
+  );
+  const userRef = getUserDocRef(params.uid);
+  const resolvedTitle = resolvePassageTitle(params.title, params.passageText);
+
+  await getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    transaction.create(passageRef, {
+      recordId: params.recordId,
+      extractionId: params.recordId,
+      uid: params.uid,
+      title: resolvedTitle,
+      passage: params.passageText,
+      vocabularyList: [],
+      previewText: buildPassagePreview(params.passageText),
+      passageHash: hashPassage(params.passageText),
+      vocabularyCount: 0,
+      status: "pending",
+      createdAt,
+      updatedAt: createdAt,
+    });
+
+    transaction.set(
+      userRef,
+      {
+        uid: params.uid,
+        totalPassages: FieldValue.increment(1),
+        updatedAt: createdAt,
+      },
+      { merge: true },
+    );
+  });
+
+  return {
+    recordId: params.recordId,
+    title: resolvedTitle,
+    passage: params.passageText,
+    createdAt,
+  };
+}
+
+export async function claimPendingPassage(params: {
+  uid: string;
+  recordId: string;
+}) {
+  const attemptId = randomUUID();
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId,
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      return null;
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+
+    if (getPassageStatus(data) !== "pending" || data.activeAttemptId) {
+      return null;
+    }
+
+    transaction.update(passageRef, {
+      activeAttemptId: attemptId,
+      updatedAt: Timestamp.now(),
+    });
+
+    return {
+      attemptId,
+      title: data.title,
+      passage: data.passage,
+    };
+  });
+}
+
+export async function completeClaimedPassage(params: {
+  uid: string;
+  recordId: string;
+  attemptId: string;
+  vocabulary: VocabularyItemInput[];
+}) {
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId,
+  );
+  const vocabularyList = params.vocabulary.map((item) =>
+    normalizeVocabularyItem(item),
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (
+      !snapshot.exists ||
+      (snapshot.data() as PassageHistoryItem).activeAttemptId !== params.attemptId
+    ) {
+      return false;
+    }
+
+    transaction.update(passageRef, {
+      vocabularyList,
+      vocabularyCount: vocabularyList.length,
+      status: "completed",
+      updatedAt: Timestamp.now(),
+      activeAttemptId: FieldValue.delete(),
+      errorReason: FieldValue.delete(),
+    });
+
+    return true;
+  });
+}
+
+export async function failClaimedPassage(params: {
+  uid: string;
+  recordId: string;
+  attemptId: string;
+  errorReason: string;
+}) {
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId,
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (
+      !snapshot.exists ||
+      (snapshot.data() as PassageHistoryItem).activeAttemptId !== params.attemptId
+    ) {
+      return false;
+    }
+
+    transaction.update(passageRef, {
+      vocabularyList: [],
+      vocabularyCount: 0,
+      status: "error",
+      errorReason: params.errorReason,
+      updatedAt: Timestamp.now(),
+      activeAttemptId: FieldValue.delete(),
+    });
+
+    return true;
+  });
+}
+
+export async function retryPassageExtraction(params: {
+  uid: string;
+  recordId: string;
+}) {
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId,
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      throw new Error("NOT_FOUND");
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+    const status = getPassageStatus(data);
+
+    if (status === "pending") {
+      return { recordId: params.recordId, status: "pending" as const };
+    }
+
+    if (status !== "error") {
+      throw new Error("INVALID_INPUT");
+    }
+
+    transaction.update(passageRef, {
+      vocabularyList: [],
+      vocabularyCount: 0,
+      status: "pending",
+      updatedAt: Timestamp.now(),
+      activeAttemptId: FieldValue.delete(),
+      errorReason: FieldValue.delete(),
+    });
+
+    return { recordId: params.recordId, status: "pending" as const };
   });
 }
 
@@ -555,13 +782,19 @@ export async function getProfileHistory(params: {
   const passages = passagesSnapshot.docs.map((doc) => {
     const data = doc.data() as PassageHistoryItem;
     const passage = data.passage ?? "";
+    const status = getPassageStatus(data);
+    const vocabularyList = getPassageVocabularyList(data);
 
     return {
       recordId: data.recordId ?? doc.id,
       title: resolvePassageTitle(data.title, passage),
       previewText: data.previewText ?? buildPassagePreview(passage),
       createdAt: toDateIsoString(data.createdAt),
-      vocabularyCount: data.vocabularyCount ?? 0,
+      vocabularyCount: getPassageVocabularyCount(status, vocabularyList),
+      status,
+      ...(status === "error" && data.errorReason
+        ? { errorReason: data.errorReason }
+        : {}),
     } satisfies PassageApiItem;
   });
 
@@ -639,15 +872,20 @@ export async function getPassageDetailByRecordId(params: {
 
   const data = snapshot.data() as PassageHistoryItem;
   const passage = data.passage ?? "";
+  const status = getPassageStatus(data);
+  const vocabularyList = getPassageVocabularyList(data);
 
   return {
     recordId: data.recordId ?? snapshot.id,
     title: resolvePassageTitle(data.title, passage),
     passage,
-    vocabularyList: (data.vocabularyList ?? []).map((item) =>
-      normalizeVocabularyItem(item),
-    ),
+    vocabularyList: status === "completed" ? vocabularyList : [],
     createdAt: toDateIsoString(data.createdAt),
+    vocabularyCount: getPassageVocabularyCount(status, vocabularyList),
+    status,
+    ...(status === "error" && data.errorReason
+      ? { errorReason: data.errorReason }
+      : {}),
   } satisfies PassageDetailApiItem;
 }
 

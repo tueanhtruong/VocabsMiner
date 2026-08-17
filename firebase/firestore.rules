@@ -30,11 +30,14 @@ service cloud.firestore {
       match /passages/{passageId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid)
-                      && uidMatchesPath(uid);
+                      && uidMatchesPath(uid)
+                      && !('activeAttemptId' in request.resource.data);
         allow update: if isOwner(uid)
                       && resource.data.uid == uid
                       && uidMatchesPath(uid)
-                      && uidIsImmutable();
+                      && uidIsImmutable()
+                      && !('activeAttemptId' in request.resource.data)
+                      && request.resource.data.status == resource.data.status;
         allow delete: if isOwner(uid)
                       && resource.data.uid == uid;
       }

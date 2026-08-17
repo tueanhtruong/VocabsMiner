@@ -39,6 +39,17 @@ Required groups:
   - `OPENROUTER_API_KEY`
   - `OPENROUTER_MODEL` (optional, defaults to `openai/gpt-4o-mini`)
 
+Firebase Functions also reads `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, and
+optionally `FUNCTIONS_REGION` from `functions/.env` during deployment or the
+deployed function environment. Use `functions/.env.example` as the template.
+Deploy
+the durable extraction worker with:
+
+```bash
+pnpm --dir functions install
+pnpm --dir functions deploy
+```
+
 ## Install and Run
 
 ```bash
@@ -52,8 +63,8 @@ App runs at `http://localhost:3000`.
 ## Core User Flows
 
 1. Open `/login` and sign in with Google.
-2. Go to `/dashboard`, paste a passage, and run extraction.
-3. Review extracted words immediately in the results panel.
+2. Go to `/dashboard`, paste a passage, and submit it.
+3. The passage is saved as pending immediately; extraction continues in the background.
 4. Open vocabulary bank on dashboard for persisted, deduplicated words.
 5. Open `/dashboard/history` for passage and vocabulary timeline views.
 6. Open a saved passage detail page, select a word in the passage panel, and use the popup actions to translate it to Vietnamese or generate a prefilled vocabulary draft.
@@ -62,11 +73,16 @@ App runs at `http://localhost:3000`.
 
 - `POST /api/auth/session`: create session cookie from Firebase ID token.
 - `DELETE /api/auth/session`: clear session cookie.
-- `POST /api/extract`: extract vocabulary from a passage and persist history.
+- `POST /api/extract`: save a pending passage and start background extraction.
+- `POST /api/extract/process`: internally process a pending passage with the existing OpenRouter extractor.
+- `POST /api/extract/retry`: retry an owned failed extraction.
 - `GET /api/vocabulary`: paginated vocabulary list with optional prefix filter.
 - `POST /api/word-actions/translate`: translate a selected passage word to Vietnamese.
 - `POST /api/word-actions/draft`: generate a prefilled vocabulary draft from a selected passage word.
 - `GET /api/profile/history`: paginated combined passage and vocabulary history.
+
+Passage records move through `pending`, `completed`, and `error` states. Failed
+records retain their original passage and expose a Retry action on the detail page.
 
 Protected routes require either:
 

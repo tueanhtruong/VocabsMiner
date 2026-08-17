@@ -12,10 +12,10 @@
 
 **Purpose**: Establish the Firebase Functions project surface required for durable extraction.
 
-- [ ] T001 Create the Firebase Functions package manifest with Node.js 20-compatible Firebase Functions, Firebase Admin, OpenRouter client, and TypeScript dependencies in `functions/package.json`
-- [ ] T002 [P] Create Firebase Functions TypeScript compiler configuration targeting the deployed Node.js runtime in `functions/tsconfig.json`
-- [ ] T003 [P] Add the Functions source entry point and deployment-facing export scaffold in `functions/src/index.ts`
-- [ ] T004 [P] Document the Functions environment variables and deployment command in `README.md`
+- [x] T001 Create the Firebase Functions package manifest with Node.js 20-compatible Firebase Functions, Firebase Admin, OpenRouter client, and TypeScript dependencies in `functions/package.json`
+- [x] T002 [P] Create Firebase Functions TypeScript compiler configuration targeting the deployed Node.js runtime in `functions/tsconfig.json`
+- [x] T003 [P] Add the Functions source entry point and deployment-facing export scaffold in `functions/src/index.ts`
+- [x] T004 [P] Document the Functions environment variables and deployment command in `README.md`
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
@@ -23,13 +23,13 @@
 
 **Checkpoint**: Foundation ready. User story implementation can now proceed in priority order or in parallel where files do not overlap.
 
-- [ ] T005 Extend the passage history domain types with `pending`, `completed`, and `error` status fields, sanitized error reason, and internal attempt claim metadata in `lib/firebase/firestore-service.ts`
-- [ ] T006 Implement pending passage creation that stores an empty vocabulary list, zero count, status, timestamps, and immutable user ownership in `lib/firebase/firestore-service.ts`
-- [ ] T007 Implement transactional attempt claim and claim-token-guarded completion/error finalization helpers in `lib/firebase/firestore-service.ts`
-- [ ] T008 [P] Implement sanitized OpenRouter/provider error mapping for background worker failures in `functions/src/extraction-worker.ts`
-- [ ] T009 Implement the Firestore passage trigger that claims pending records, runs the existing vocabulary extraction logic, updates vocabulary/profile persistence on success, and records sanitized errors on failure in `functions/src/extraction-worker.ts`
-- [ ] T010 Export the configured passage trigger from `functions/src/index.ts` and verify its watched document path matches `users/{uid}/passages/{recordId}`
-- [ ] T011 [P] Update Firestore rules or deployment configuration documentation to preserve authenticated user isolation and prevent client access to internal attempt metadata in `firebase/firestore.rules`
+- [x] T005 Extend the passage history domain types with `pending`, `completed`, and `error` status fields, sanitized error reason, and internal attempt claim metadata in `lib/firebase/firestore-service.ts`
+- [x] T006 Implement pending passage creation that stores an empty vocabulary list, zero count, status, timestamps, and immutable user ownership in `lib/firebase/firestore-service.ts`
+- [x] T007 Implement transactional attempt claim and claim-token-guarded completion/error finalization helpers in `lib/firebase/firestore-service.ts`
+- [x] T008 [P] Implement sanitized OpenRouter/provider error mapping for background worker failures in `functions/src/extraction-worker.ts`
+- [x] T009 Implement the Firestore passage trigger that claims pending records, runs the existing vocabulary extraction logic, updates vocabulary/profile persistence on success, and records sanitized errors on failure in `functions/src/extraction-worker.ts`
+- [x] T010 Export the configured passage trigger from `functions/src/index.ts` and verify its watched document path matches `users/{uid}/passages/{recordId}`
+- [x] T011 [P] Update Firestore rules or deployment configuration documentation to preserve authenticated user isolation and prevent client access to internal attempt metadata in `firebase/firestore.rules`
 
 ## Phase 3: User Story 1 - Submit Without Blocking (Priority: P1) 🎯 MVP
 
@@ -39,12 +39,12 @@
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Refactor `POST /api/extract` to validate input, create the pending passage record, and return the contract response without awaiting vocabulary extraction in `app/api/extract/route.ts`
-- [ ] T013 [P] [US1] Update the extraction response and mutation types to represent `pending`, empty vocabulary, and immediate persistence in `lib/query-hooks/extraction.ts`
-- [ ] T014 [US1] Remove the full-page extraction overlay and navigate after the pending response is received in `app/dashboard/page.tsx`
-- [ ] T015 [P] [US1] Add pending-state copy and zero-result handling to the dashboard extraction result surface in `app/dashboard/extraction-result.tsx`
-- [ ] T016 [US1] Ensure invalid title or passage input remains rejected before record creation and displays the existing actionable validation state in `app/dashboard/page.tsx`
-- [ ] T017 [US1] Confirm the dashboard submission flow leaves the user on a usable route after the pending record response and does not disable unrelated navigation in `app/dashboard/page.tsx`
+- [x] T012 [US1] Refactor `POST /api/extract` to validate input, create the pending passage record, and return the contract response without awaiting vocabulary extraction in `app/api/extract/route.ts`
+- [x] T013 [P] [US1] Update the extraction response and mutation types to represent `pending`, empty vocabulary, and immediate persistence in `lib/query-hooks/extraction.ts`
+- [x] T014 [US1] Remove the full-page extraction overlay and navigate after the pending response is received in `app/dashboard/page.tsx`
+- [x] T015 [P] [US1] Add pending-state copy and zero-result handling to the dashboard extraction result surface in `app/dashboard/extraction-result.tsx`
+- [x] T016 [US1] Ensure invalid title or passage input remains rejected before record creation and displays the existing actionable validation state in `app/dashboard/page.tsx`
+- [x] T017 [US1] Confirm the dashboard submission flow leaves the user on a usable route after the pending record response and does not disable unrelated navigation in `app/dashboard/page.tsx`
 
 **Checkpoint**: A valid submission creates one pending history record quickly and does not block the application while the Firebase worker processes it.
 
@@ -56,13 +56,13 @@
 
 ### Implementation for User Story 2
 
-- [ ] T018 [P] [US2] Add status, sanitized error reason when applicable, and status-consistent vocabulary count to history API passage items in `app/api/profile/history/route.ts`
-- [ ] T019 [P] [US2] Add status-aware passage history and sidebar types while preserving the shared history query cache in `lib/query-hooks/history.ts`
-- [ ] T020 [US2] Render pending and completed status indicators and status-consistent word counts in `app/dashboard/history/history-panel.tsx`
-- [ ] T021 [P] [US2] Include status, error reason, and vocabulary count in the passage detail API response from `lib/firebase/firestore-service.ts`
-- [ ] T022 [US2] Update the passage detail query response type and render pending/completed states without showing incomplete vocabulary actions in `app/dashboard/passages/[recordId]/page.tsx`
-- [ ] T023 [US2] Add detail-query refresh behavior that polls only while the record is pending and stops when it becomes completed or error in `app/dashboard/passages/[recordId]/page.tsx`
-- [ ] T024 [US2] Keep vocabulary aggregate upserts and passage vocabulary counts consistent when the worker completes with a non-empty or zero-item result in `functions/src/extraction-worker.ts`
+- [x] T018 [P] [US2] Add status, sanitized error reason when applicable, and status-consistent vocabulary count to history API passage items in `app/api/profile/history/route.ts`
+- [x] T019 [P] [US2] Add status-aware passage history and sidebar types while preserving the shared history query cache in `lib/query-hooks/history.ts`
+- [x] T020 [US2] Render pending and completed status indicators and status-consistent word counts in `app/dashboard/history/history-panel.tsx`
+- [x] T021 [P] [US2] Include status, error reason, and vocabulary count in the passage detail API response from `lib/firebase/firestore-service.ts`
+- [x] T022 [US2] Update the passage detail query response type and render pending/completed states without showing incomplete vocabulary actions in `app/dashboard/passages/[recordId]/page.tsx`
+- [x] T023 [US2] Add detail-query refresh behavior that polls only while the record is pending and stops when it becomes completed or error in `app/dashboard/passages/[recordId]/page.tsx`
+- [x] T024 [US2] Keep vocabulary aggregate upserts and passage vocabulary counts consistent when the worker completes with a non-empty or zero-item result in `functions/src/extraction-worker.ts`
 
 **Checkpoint**: History and detail can be revisited independently of the original submission, and successful or empty extractions settle as `completed` with the correct list/count.
 
@@ -74,13 +74,13 @@
 
 ### Implementation for User Story 3
 
-- [ ] T025 [P] [US3] Implement an authenticated retry Firestore mutation that transactionally resets only an error record to pending, clears stale vocabulary/error/claim fields, and preserves title/content/createdAt in `lib/firebase/firestore-service.ts`
-- [ ] T026 [US3] Add `POST /api/extract/retry` request validation, owner-scoped lookup, idempotent pending handling, and error responses in `app/api/extract/retry/route.ts`
-- [ ] T027 [P] [US3] Add the retry mutation and cache invalidation for passage detail and history queries in `lib/query-hooks/extraction.ts`
-- [ ] T028 [US3] Render the saved passage error state, sanitized reason, and Retry action in `app/dashboard/passages/[recordId]/page.tsx`
-- [ ] T029 [US3] Disable duplicate retry submissions, refresh the record to pending after success, and preserve navigation while the new worker attempt runs in `app/dashboard/passages/[recordId]/page.tsx`
-- [ ] T030 [US3] Ensure worker finalization ignores stale claim tokens so an older attempt cannot overwrite a newer retry result in `functions/src/extraction-worker.ts`
-- [ ] T031 [US3] Expose error status and sanitized error reason in history while keeping failed records linkable and vocabulary count at zero in `app/dashboard/history/history-panel.tsx`
+- [x] T025 [P] [US3] Implement an authenticated retry Firestore mutation that transactionally resets only an error record to pending, clears stale vocabulary/error/claim fields, and preserves title/content/createdAt in `lib/firebase/firestore-service.ts`
+- [x] T026 [US3] Add `POST /api/extract/retry` request validation, owner-scoped lookup, idempotent pending handling, and error responses in `app/api/extract/retry/route.ts`
+- [x] T027 [P] [US3] Add the retry mutation and cache invalidation for passage detail and history queries in `lib/query-hooks/extraction.ts`
+- [x] T028 [US3] Render the saved passage error state, sanitized reason, and Retry action in `app/dashboard/passages/[recordId]/page.tsx`
+- [x] T029 [US3] Disable duplicate retry submissions, refresh the record to pending after success, and preserve navigation while the new worker attempt runs in `app/dashboard/passages/[recordId]/page.tsx`
+- [x] T030 [US3] Ensure worker finalization ignores stale claim tokens so an older attempt cannot overwrite a newer retry result in `functions/src/extraction-worker.ts`
+- [x] T031 [US3] Expose error status and sanitized error reason in history while keeping failed records linkable and vocabulary count at zero in `app/dashboard/history/history-panel.tsx`
 
 **Checkpoint**: A failed extraction remains recoverable, retry is owner-scoped and idempotent, and stale background work cannot replace a newer retry.
 
@@ -88,11 +88,11 @@
 
 **Purpose**: Align documentation, operational validation, and quality gates across the complete feature.
 
-- [ ] T032 [P] Update API endpoint and user-flow documentation for pending extraction, status states, and retry behavior in `README.md`
-- [ ] T033 [P] Add the Functions package to the workspace/deployment configuration and verify production environment variable names in `pnpm-workspace.yaml` and `firebase.json`
+- [x] T032 [P] Update API endpoint and user-flow documentation for pending extraction, status states, and retry behavior in `README.md`
+- [x] T033 [P] Add the Functions package to the workspace/deployment configuration and verify production environment variable names in `pnpm-workspace.yaml` and `firebase.json`
 - [ ] T034 Run the delayed-provider, browser-close, zero-vocabulary, duplicate-retry, and user-isolation scenarios from `specs/004-background-vocabulary-extraction/quickstart.md`
-- [ ] T035 Run `pnpm lint` from the repository root and resolve all errors before marking the feature complete
-- [ ] T036 Verify the final implementation against every acceptance scenario and functional requirement in `specs/004-background-vocabulary-extraction/spec.md`
+- [x] T035 Run `pnpm lint` from the repository root and resolve all errors before marking the feature complete
+- [x] T036 Verify the final implementation against every acceptance scenario and functional requirement in `specs/004-background-vocabulary-extraction/spec.md`
 
 ## Dependencies & Execution Order
 

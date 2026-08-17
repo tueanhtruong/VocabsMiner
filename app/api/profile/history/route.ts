@@ -43,9 +43,11 @@ export async function GET(request: Request) {
         recordId: item.recordId,
         title: item.title,
         previewText: item.previewText,
-        createdAt: item.createdAt,
-        vocabularyCount: item.vocabularyCount,
-      })),
+         createdAt: item.createdAt,
+         vocabularyCount: item.vocabularyCount,
+         status: item.status,
+         ...(item.errorReason ? { errorReason: item.errorReason } : {}),
+       })),
     });
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_CURSOR") {

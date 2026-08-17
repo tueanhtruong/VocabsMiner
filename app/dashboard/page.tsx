@@ -1,16 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ExtractionResult } from "@/app/dashboard/extraction-result";
 import { ExtractionStatus } from "@/app/dashboard/extraction-status";
 import { VocabularyList } from "@/app/dashboard/vocabulary-list";
 import { ApiClientError } from "@/lib/query-hooks/api-client";
-import {
-  ExtractionVocabularyItem,
-  useExtractVocabularyMutation,
-} from "@/lib/query-hooks/extraction";
+import { useExtractVocabularyMutation } from "@/lib/query-hooks/extraction";
 
 const maxPassageLength = 10000;
 
@@ -18,7 +15,6 @@ export default function DashboardPage() {
   const [title, setTitle] = useState("");
   const [passage, setPassage] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [vocabulary, setVocabulary] = useState<ExtractionVocabularyItem[]>([]);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
@@ -47,7 +43,6 @@ export default function DashboardPage() {
         title: normalizedTitle,
         passage: normalizedPassage,
       });
-      setVocabulary(response.vocabularyList ?? []);
       setIsSubmitted(true);
       router.push(`/dashboard/passages/${response.recordId}`);
     } catch (error) {
@@ -59,24 +54,12 @@ export default function DashboardPage() {
         setErrorMessage("Extraction failed unexpectedly");
       }
 
-      setVocabulary([]);
       setIsSubmitted(true);
     }
   }
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
-      {extractionMutation.isPending ? (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white/80 backdrop-blur-sm">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
-          <p className="text-base font-semibold text-gray-900">
-            Extracting vocabulary…
-          </p>
-          <p className="text-sm text-gray-500">
-            This may take a few minutes. Please wait.
-          </p>
-        </div>
-      ) : null}
       <header>
         <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
           Dashboard
@@ -126,9 +109,7 @@ export default function DashboardPage() {
               disabled={extractionMutation.isPending}
               className="rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-lg transition hover:shadow-xl hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 active:scale-100"
             >
-              {extractionMutation.isPending
-                ? "Extracting..."
-                : "Extract Vocabulary"}
+              {extractionMutation.isPending ? "Saving..." : "Extract Vocabulary"}
             </button>
           </div>
         </form>
@@ -138,7 +119,10 @@ export default function DashboardPage() {
         errorCode={errorCode}
         fallbackMessage={errorMessage ?? undefined}
       />
-      <ExtractionResult vocabulary={vocabulary} isSubmitted={isSubmitted} />
+      <ExtractionResult
+        isSubmitted={isSubmitted}
+        isPending={extractionMutation.isPending}
+      />
       <VocabularyList />
     </main>
   );

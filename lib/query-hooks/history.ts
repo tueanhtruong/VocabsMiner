@@ -10,11 +10,19 @@ export type PassageHistoryItem = {
   previewText: string;
   createdAt: string;
   vocabularyCount: number;
+  status: "pending" | "completed" | "error";
+  errorReason?: string;
 };
 
 export type SidebarPassageHistoryItem = Pick<
   PassageHistoryItem,
-  "recordId" | "title" | "createdAt" | "vocabularyCount" | "previewText"
+  | "recordId"
+  | "title"
+  | "createdAt"
+  | "vocabularyCount"
+  | "previewText"
+  | "status"
+  | "errorReason"
 >;
 
 export type VocabularyHistoryItem = {
@@ -75,6 +83,8 @@ export function usePassageHistoryQuery() {
     queryKey: ["history", "passages"],
     queryFn: () => getProfileHistoryPage({}),
     select: (data) => data.passages,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -90,8 +100,12 @@ export function useSidebarPassageHistoryQuery() {
           previewText: item.previewText,
           createdAt: item.createdAt,
           vocabularyCount: item.vocabularyCount,
+          status: item.status,
+          errorReason: item.errorReason,
         }),
-      ),
+        ),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 

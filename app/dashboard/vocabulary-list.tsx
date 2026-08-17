@@ -119,8 +119,11 @@ export function VocabularyList() {
                       {item.title}
                     </h3>
                     <span className="text-sm text-gray-500 whitespace-nowrap leading-7 self-start">
-                      {item.vocabularyCount} word
-                      {item.vocabularyCount > 1 ? "s" : ""}
+                      {item.status === "pending"
+                        ? "Pending"
+                        : item.status === "error"
+                          ? "Retry needed"
+                          : `${item.vocabularyCount} word${item.vocabularyCount > 1 ? "s" : ""}`}
                     </span>
                   </div>
                   <p className="mt-1 line-clamp-2 text-sm text-gray-700">

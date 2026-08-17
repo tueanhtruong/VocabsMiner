@@ -13,6 +13,12 @@ import {
 
 const PAGE_SIZE = 10;
 
+const statusStyles = {
+  pending: "bg-amber-100 text-amber-800",
+  completed: "bg-emerald-100 text-emerald-800",
+  error: "bg-red-100 text-red-800",
+} as const;
+
 export function HistoryPanel() {
   const passagesQuery = usePassageHistoryQuery();
   const vocabularyQuery = useVocabularyHistoryQuery();
@@ -151,14 +157,29 @@ export function HistoryPanel() {
                       <p className="text-sm font-semibold text-gray-900">
                         {item.title}
                       </p>
+                      <span
+                        className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusStyles[item.status]}`}
+                      >
+                        {item.status === "pending"
+                          ? "Extracting"
+                          : item.status === "error"
+                            ? "Needs retry"
+                            : "Completed"}
+                      </span>
                       <p className="text-sm text-gray-700">
                         {item.previewText}
                       </p>
                       <p className="mt-1 text-sm text-gray-500">
                         {new Date(item.createdAt).toLocaleString()} •{" "}
-                        {item.vocabularyCount} word
-                        {item.vocabularyCount > 1 ? "s" : ""}
+                        {item.status === "pending"
+                          ? "Vocabulary pending"
+                          : `${item.vocabularyCount} word${item.vocabularyCount > 1 ? "s" : ""}`}
                       </p>
+                      {item.status === "error" && item.errorReason ? (
+                        <p className="mt-1 text-sm text-red-700">
+                          {item.errorReason}
+                        </p>
+                      ) : null}
                     </Link>
                     <button
                       type="button"
