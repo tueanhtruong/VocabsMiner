@@ -41,15 +41,18 @@ export function PassageDrawer({
         className="lg:hidden m-0 h-full overflow-y-auto"
       >
         <Drawer.Header
-          className="flex items-center justify-between border-b border-gray-200"
+          className="flex flex-col justify-start border-b border-gray-200"
           style={{ zIndex: 1550 }}
         >
-          <Drawer.Title>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {title || "Passage"}
-            </h3>
-          </Drawer.Title>
-          <Drawer.CloseButton aria-label="Close drawer" />
+          <div className="w-full h-[max(0px,env(safe-area-inset-top))] flex-col bg-white" />
+          <div className="flex items-center justify-start w-full">
+            <Drawer.Title>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {title || "Passage"}
+              </h3>
+            </Drawer.Title>
+            <Drawer.CloseButton aria-label="Close drawer" />
+          </div>
         </Drawer.Header>
         <Drawer.Body style={{ paddingBlockStart: 8 }}>
           <PassagePanel
