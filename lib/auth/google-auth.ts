@@ -5,6 +5,7 @@ import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
 const localUidStorageKey = "vocabsminer.auth.uid";
 
 export type SessionUser = {
