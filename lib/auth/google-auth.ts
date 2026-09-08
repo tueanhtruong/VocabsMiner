@@ -7,6 +7,7 @@ import { getFirebaseClientAuth } from "@/lib/firebase/client";
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 const localUidStorageKey = "vocabsminer.auth.uid";
+const localIdTokenStorageKey = "vocabsminer.auth.id-token";
 
 export type SessionUser = {
   uid: string;
@@ -39,6 +40,14 @@ export function saveUidToLocalStore(uid: string) {
   window.localStorage.setItem(localUidStorageKey, uid);
 }
 
+export function saveIdTokenToLocalStore(idToken: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(localIdTokenStorageKey, idToken);
+}
+
 export function getUidFromLocalStore() {
   if (typeof window === "undefined") {
     return null;
@@ -47,12 +56,21 @@ export function getUidFromLocalStore() {
   return window.localStorage.getItem(localUidStorageKey);
 }
 
+export function getIdTokenFromLocalStore() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(localIdTokenStorageKey);
+}
+
 export function clearUidFromLocalStore() {
   if (typeof window === "undefined") {
     return;
   }
 
   window.localStorage.removeItem(localUidStorageKey);
+  window.localStorage.removeItem(localIdTokenStorageKey);
 }
 
 export async function signInWithGooglePopup(): Promise<GoogleSignInPayload> {

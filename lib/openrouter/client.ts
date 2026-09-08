@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import {
   parseExtractionResult,
+  parseParagraphTranslation,
   VocabularyItem,
 } from "@/lib/openrouter/extraction-schema";
 import { getOpenRouterApiKey, openRouterConfig } from "@/lib/openrouter/config";
@@ -96,7 +97,20 @@ ${passage}
 """`;
 }
 
-async function requestOpenRouter(passage: string) {
+function buildParagraphTranslationPrompt(paragraph: string) {
+  return `Translate the following English paragraph into natural Vietnamese.
+Rules:
+- Preserve the complete meaning and tone of the source paragraph
+- Return STRICT JSON only - no explanation, no markdown, no extra text
+Output shape:
+{"translation":""}
+Paragraph:
+"""
+${paragraph}
+"""`;
+}
+
+async function requestOpenRouter(prompt: string) {
   const apiKey = getOpenRouterApiKey();
 
   if (!apiKey) {
@@ -117,7 +131,7 @@ async function requestOpenRouter(passage: string) {
       },
       {
         role: "user",
-        content: buildExtractionPrompt(passage),
+        content: prompt,
       },
     ],
     temperature: 0.1,
@@ -232,7 +246,7 @@ export async function extractVocabularyFromPassage(passage: string) {
     attempt += 1
   ) {
     try {
-      const response = await requestOpenRouter(passage);
+      const response = await requestOpenRouter(buildExtractionPrompt(passage));
       const rawResponseText = await response.text();
 
       if (!response.ok) {
@@ -302,6 +316,157 @@ export async function extractVocabularyFromPassage(passage: string) {
     new OpenRouterClientError(
       "OPENROUTER_PROVIDER_ERROR",
       "Unable to complete extraction request",
+    )
+  );
+}
+
+function parseParagraphTranslationFromUnknownContent(content: unknown) {
+  if (!content) {
+    throw new OpenRouterClientError(
+      "OPENROUTER_INVALID_RESPONSE",
+      "OpenRouter response did not include completion content",
+    );
+  }
+
+  if (typeof content === "object" && !Array.isArray(content)) {
+    if (
+      "translation" in content &&
+      typeof (content as { translation?: unknown }).translation === "string"
+    ) {
+      return parseParagraphTranslation(content).translation;
+    }
+
+    if (
+      "text" in content &&
+      typeof (content as { text?: unknown }).text === "string"
+    ) {
+      return parseParagraphTranslation(
+        JSON.parse(cleanJsonContent((content as { text: string }).text)),
+      ).translation;
+    }
+  }
+
+  if (typeof content === "string") {
+    return parseParagraphTranslation(JSON.parse(cleanJsonContent(content)))
+      .translation;
+  }
+
+  if (Array.isArray(content)) {
+    const combinedText = content
+      .map((part) => {
+        if (typeof part === "string") {
+          return part;
+        }
+
+        if (
+          part &&
+          typeof part === "object" &&
+          "text" in part &&
+          typeof part.text === "string"
+        ) {
+          return part.text;
+        }
+
+        return "";
+      })
+      .join("\n")
+      .trim();
+
+    if (combinedText) {
+      return parseParagraphTranslation(
+        JSON.parse(cleanJsonContent(combinedText)),
+      ).translation;
+    }
+  }
+
+  throw new OpenRouterClientError(
+    "OPENROUTER_INVALID_RESPONSE",
+    "OpenRouter completion content format is unsupported",
+  );
+}
+
+export async function translateParagraphToVietnamese(paragraph: string) {
+  let latestError: OpenRouterClientError | null = null;
+
+  for (
+    let attempt = 0;
+    attempt <= openRouterConfig.maxRetryCount;
+    attempt += 1
+  ) {
+    try {
+      const response = await requestOpenRouter(
+        buildParagraphTranslationPrompt(paragraph),
+      );
+      const rawResponseText = await response.text();
+
+      if (!response.ok) {
+        const providerError = toOpenRouterError(
+          response.status,
+          rawResponseText,
+        );
+
+        if (
+          attempt < openRouterConfig.maxRetryCount &&
+          isRetryableStatus(response.status)
+        ) {
+          latestError = providerError;
+          continue;
+        }
+
+        throw providerError;
+      }
+
+      let parsedResponseJson: unknown;
+
+      try {
+        parsedResponseJson = JSON.parse(rawResponseText);
+      } catch {
+        throw new OpenRouterClientError(
+          "OPENROUTER_INVALID_RESPONSE",
+          "OpenRouter returned invalid JSON payload",
+        );
+      }
+
+      const responseJson = openRouterResponseSchema.parse(parsedResponseJson);
+      const rawContent = responseJson.choices[0]?.message.content;
+
+      return parseParagraphTranslationFromUnknownContent(rawContent);
+    } catch (error) {
+      if (error instanceof OpenRouterClientError) {
+        if (
+          error.code === "OPENROUTER_RATE_LIMITED" &&
+          attempt < openRouterConfig.maxRetryCount
+        ) {
+          latestError = error;
+          continue;
+        }
+
+        throw error;
+      }
+
+      if (attempt < openRouterConfig.maxRetryCount) {
+        latestError = new OpenRouterClientError(
+          "OPENROUTER_PROVIDER_ERROR",
+          "Transient translation failure, retrying",
+        );
+        continue;
+      }
+
+      throw (
+        latestError ??
+        new OpenRouterClientError(
+          "OPENROUTER_PROVIDER_ERROR",
+          "Unable to complete translation request",
+        )
+      );
+    }
+  }
+
+  throw (
+    latestError ??
+    new OpenRouterClientError(
+      "OPENROUTER_PROVIDER_ERROR",
+      "Unable to complete translation request",
     )
   );
 }

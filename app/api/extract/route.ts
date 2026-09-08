@@ -42,16 +42,19 @@ export async function POST(request: Request) {
       createdAt,
     });
 
-    dispatchPassageExtraction({
-      requestUrl: request.url,
-      recordId,
-      idToken: authenticatedUser.idToken,
-    });
+    if (process.env.EXTRACTION_FALLBACK_DISPATCH === "true") {
+      dispatchPassageExtraction({
+        requestUrl: request.url,
+        recordId,
+        idToken: authenticatedUser.idToken,
+      });
+    }
 
     return apiOk({
       recordId,
       title: savedPassage.title,
       passage: savedPassage.passage,
+      paragraphCount: savedPassage.paragraphs.length,
       status: "pending" as const,
       vocabularyList: [],
       resultCount: 0,

@@ -26,9 +26,14 @@ export const extractionResultSchema = z.object({
   vocabulary: z.array(vocabularyItemSchema),
 });
 
+export const paragraphTranslationSchema = z.object({
+  translation: z.string().trim().min(1),
+});
+
 export type ExtractionRequest = z.infer<typeof extractionRequestSchema>;
 export type VocabularyItem = z.infer<typeof vocabularyItemSchema>;
 export type ExtractionResult = z.infer<typeof extractionResultSchema>;
+export type ParagraphTranslation = z.infer<typeof paragraphTranslationSchema>;
 
 export function parseExtractionRequest(payload: unknown): ExtractionRequest {
   return extractionRequestSchema.parse(payload);
@@ -36,4 +41,10 @@ export function parseExtractionRequest(payload: unknown): ExtractionRequest {
 
 export function parseExtractionResult(payload: unknown): ExtractionResult {
   return extractionResultSchema.parse(payload);
+}
+
+export function parseParagraphTranslation(
+  payload: unknown,
+): ParagraphTranslation {
+  return paragraphTranslationSchema.parse(payload);
 }

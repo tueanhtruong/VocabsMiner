@@ -1,21 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PassageText } from "./PassageText";
 import { SelectionMenu } from "./SelectionMenu";
 import { PassagePanelProps } from "./types";
 import { useWordClick } from "./useWordClick";
 import { useWordTranslation } from "./useWordTranslation";
-import { buildPassageSegments, normalizeSelectedWord } from "./utils";
+import { normalizeSelectedWord } from "./utils";
 
 export function PassagePanel({
-  passage,
+  paragraphs,
   vocabularyWords,
   selectedWord,
   highlightedRanges,
   showNoMatch,
   onGenerateVocabularyDraft,
+  onSaveParagraphTranslation,
+  onDeleteParagraphTranslation,
+  onGenerateParagraphTranslation,
+  onRegenerateParagraphTranslation,
 }: PassagePanelProps) {
   const firstMatchRef = useRef<HTMLElement | null>(null);
   const passageScrollRef = useRef<HTMLDivElement | null>(null);
@@ -34,10 +38,6 @@ export function PassagePanel({
         );
       })
     : false;
-
-  const segments = useMemo(() => {
-    return buildPassageSegments(passage, highlightedRanges);
-  }, [highlightedRanges, passage]);
 
   useEffect(() => {
     if (!selectedWord || highlightedRanges.length === 0) {
@@ -126,13 +126,17 @@ export function PassagePanel({
       </div>
 
       <PassageText
-        segments={segments}
+        paragraphs={paragraphs}
         selectedWord={selectedWord}
         showNoMatch={showNoMatch}
         firstMatchRef={firstMatchRef}
         scrollContainerRef={passageScrollRef}
         triggerWord={popupState?.word ?? null}
         onWordClick={handleWordClick}
+        onSaveParagraphTranslation={onSaveParagraphTranslation}
+        onDeleteParagraphTranslation={onDeleteParagraphTranslation}
+        onGenerateParagraphTranslation={onGenerateParagraphTranslation}
+        onRegenerateParagraphTranslation={onRegenerateParagraphTranslation}
       />
 
       <SelectionMenu

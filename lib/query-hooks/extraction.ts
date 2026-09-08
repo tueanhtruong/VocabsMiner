@@ -21,6 +21,7 @@ export type ExtractionResponse = {
   recordId: string;
   title: string;
   passage: string;
+  paragraphCount: number;
   status: "pending";
   vocabularyList: ExtractionVocabularyItem[];
   resultCount: number;

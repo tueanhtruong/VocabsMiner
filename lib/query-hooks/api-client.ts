@@ -1,4 +1,5 @@
-import { getUidFromLocalStore } from "../auth/google-auth";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { getIdTokenFromLocalStore } from "@/lib/auth/google-auth";
 
 export type ApiErrorPayload = {
   error?: {
@@ -21,12 +22,17 @@ export async function requestJson<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<T> {
+  const firebaseUser = getFirebaseClientAuth().currentUser;
+  const idToken = firebaseUser
+    ? await firebaseUser.getIdToken()
+    : getIdTokenFromLocalStore();
+
   const response = await fetch(input, {
     cache: "no-store",
     ...init,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${getUidFromLocalStore() ?? ""}`,
+      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
       ...(init?.headers ?? {}),
     },
   });

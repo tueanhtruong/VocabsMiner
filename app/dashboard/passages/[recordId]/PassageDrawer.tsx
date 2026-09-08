@@ -4,28 +4,40 @@ import { Drawer } from "@mantine/core";
 
 import { PassagePanel } from "@/app/dashboard/passages/[recordId]/PassagePanel";
 import type { HighlightRange } from "@/app/dashboard/passages/[recordId]/highlight-utils";
+import type { PassageParagraph } from "@/lib/query-hooks/translations";
 
 type PassageDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  passage: string;
+  paragraphs: PassageParagraph[];
   vocabularyWords: string[];
   selectedWord: string | null;
   highlightedRanges: HighlightRange[];
   showNoMatch: boolean;
   onGenerateVocabularyDraft: (word: string) => Promise<void>;
+  onSaveParagraphTranslation: (
+    paragraphId: string,
+    translation: string,
+  ) => Promise<void>;
+  onDeleteParagraphTranslation: (paragraphId: string) => Promise<void>;
+  onGenerateParagraphTranslation: (paragraphId: string) => Promise<void>;
+  onRegenerateParagraphTranslation: (paragraphId: string) => Promise<void>;
   title?: string;
 };
 
 export function PassageDrawer({
   open,
   onOpenChange,
-  passage,
+  paragraphs,
   vocabularyWords,
   selectedWord,
   highlightedRanges,
   showNoMatch,
   onGenerateVocabularyDraft,
+  onSaveParagraphTranslation,
+  onDeleteParagraphTranslation,
+  onGenerateParagraphTranslation,
+  onRegenerateParagraphTranslation,
   title,
 }: PassageDrawerProps) {
   return (
@@ -56,12 +68,16 @@ export function PassageDrawer({
         </Drawer.Header>
         <Drawer.Body style={{ paddingBlockStart: 8 }}>
           <PassagePanel
-            passage={passage}
+            paragraphs={paragraphs}
             vocabularyWords={vocabularyWords}
             selectedWord={selectedWord}
             highlightedRanges={highlightedRanges}
             showNoMatch={showNoMatch}
             onGenerateVocabularyDraft={onGenerateVocabularyDraft}
+            onSaveParagraphTranslation={onSaveParagraphTranslation}
+            onDeleteParagraphTranslation={onDeleteParagraphTranslation}
+            onGenerateParagraphTranslation={onGenerateParagraphTranslation}
+            onRegenerateParagraphTranslation={onRegenerateParagraphTranslation}
           />
         </Drawer.Body>
       </Drawer.Content>

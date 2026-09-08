@@ -67,16 +67,20 @@ App runs at `http://localhost:3000`.
 3. The passage is saved as pending immediately; extraction continues in the background.
 4. Open vocabulary bank on dashboard for persisted, deduplicated words.
 5. Open `/dashboard/history` for passage and vocabulary timeline views.
-6. Open a saved passage detail page, select a word in the passage panel, and use the popup actions to translate it to Vietnamese or generate a prefilled vocabulary draft.
+6. Open a saved passage detail page to expand paragraph-level Vietnamese translations, add or edit a translation manually, delete it, or generate/regenerate it with AI.
+7. Select a word in the passage panel and use the popup actions to translate it to Vietnamese or generate a prefilled vocabulary draft.
 
 ## API Endpoints
 
 - `POST /api/auth/session`: create session cookie from Firebase ID token.
 - `DELETE /api/auth/session`: clear session cookie.
 - `POST /api/extract`: save a pending passage and start background extraction.
-- `POST /api/extract/process`: internally process a pending passage with the existing OpenRouter extractor.
+- `POST /api/extract/process`: explicitly process a pending passage with the existing OpenRouter extractor for local/manual fallback use; Firebase Functions owns automatic production processing.
 - `POST /api/extract/retry`: retry an owned failed extraction.
 - `GET /api/vocabulary`: paginated vocabulary list with optional prefix filter.
+- `POST /api/translations`: manually add or AI-generate one paragraph translation.
+- `PUT /api/translations`: manually edit or AI-regenerate one paragraph translation.
+- `DELETE /api/translations`: delete one paragraph translation.
 - `POST /api/word-actions/translate`: translate a selected passage word to Vietnamese.
 - `POST /api/word-actions/draft`: generate a prefilled vocabulary draft from a selected passage word.
 - `GET /api/profile/history`: paginated combined passage and vocabulary history.
@@ -90,6 +94,11 @@ Protected routes require either:
 - Session cookie set by `/api/auth/session`
 
 The word-action routes use the same authenticated request pattern as the rest of the app.
+
+Paragraph translations are stored with the owning passage. AI operations are
+transactionally claimed per paragraph, and an expired claim can be reclaimed
+without removing an existing translation. Translation-provider failures affect
+only the paragraph being generated and do not clear vocabulary results.
 
 ## Linting
 

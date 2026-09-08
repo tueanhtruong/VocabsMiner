@@ -64,10 +64,10 @@ async function getBestVoice(
   const voices = await getVoices();
 
   const priorityPatterns = [
-    /Google US English/i,
     /Microsoft.*Online.*\(Natural\)/i, // Edge "Natural" voices - very clear
-    /Microsoft Aria/i,
+    /Google US English/i,
     /Samantha/i, // good Apple voice
+    /Microsoft Aria/i,
   ];
 
   for (const pattern of priorityPatterns) {
@@ -170,20 +170,20 @@ export function useSpeech() {
 
   const speak = useCallback(
     async (word: string) => {
-      const { audioUrl } = await fetchPronunciation(word);
+      // const { audioUrl } = await fetchPronunciation(word);
 
-      if (audioUrl) {
-        audioRef.current?.pause();
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
+      // if (audioUrl) {
+      //   audioRef.current?.pause();
+      //   const audio = new Audio(audioUrl);
+      //   audioRef.current = audio;
 
-        try {
-          await audio.play();
-          return;
-        } catch {
-          // Autoplay blocked or load failed — fall back to synthesized speech.
-        }
-      }
+      //   try {
+      //     await audio.play();
+      //     return;
+      //   } catch {
+      //     // Autoplay blocked or load failed — fall back to synthesized speech.
+      //   }
+      // }
 
       fallbackSpeak(word);
     },

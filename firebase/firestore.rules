@@ -37,6 +37,9 @@ service cloud.firestore {
                       && uidMatchesPath(uid)
                       && uidIsImmutable()
                       && !('activeAttemptId' in request.resource.data)
+                      && !('translationOperationId' in request.resource.data)
+                      && !('translationOperationStartedAt' in request.resource.data)
+                      && !('translationOperationExpiresAt' in request.resource.data)
                       && request.resource.data.status == resource.data.status;
         allow delete: if isOwner(uid)
                       && resource.data.uid == uid;

@@ -1,14 +1,15 @@
 "use client";
 
+import { onIdTokenChanged, type User } from "firebase/auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import {
-  getRestoreSessionQueryKey,
-  getUidFromLocalStore,
   GoogleSignInPayload,
+  saveIdTokenToLocalStore,
   saveUidToLocalStore,
   signInWithGooglePopup,
 } from "@/lib/auth/google-auth";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import { requestJson } from "@/lib/query-hooks/api-client";
 
 type SessionUser = {
@@ -41,14 +42,29 @@ async function createSession(
   return response.user;
 }
 
-async function restoreSessionFromApi(
-  storedUid: string,
-): Promise<RestoreSessionResult> {
+function getCurrentFirebaseUser(): Promise<User | null> {
+  const auth = getFirebaseClientAuth();
+
+  return new Promise((resolve) => {
+    let unsubscribe: () => void = () => undefined;
+    unsubscribe = onIdTokenChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
+async function restoreSessionFromApi(): Promise<RestoreSessionResult> {
   try {
-    const response = await requestJson<SessionResponse>(
-      `/api/auth/session?uid=${encodeURIComponent(storedUid)}`,
-      { method: "GET" },
-    );
+    const firebaseUser = await getCurrentFirebaseUser();
+
+    if (!firebaseUser) {
+      return { restored: false };
+    }
+
+    const response = await requestJson<SessionResponse>("/api/auth/session", {
+      method: "GET",
+    });
 
     if (!response?.user?.uid) {
       return { restored: false };
@@ -61,18 +77,10 @@ async function restoreSessionFromApi(
 }
 
 export function useRestoreSessionQuery() {
-  const storedUid = getUidFromLocalStore();
-
   return useQuery({
-    queryKey: getRestoreSessionQueryKey(storedUid),
-    enabled: Boolean(storedUid),
-    queryFn: async () => {
-      if (!storedUid) {
-        return { restored: false } as RestoreSessionResult;
-      }
-
-      return restoreSessionFromApi(storedUid);
-    },
+    queryKey: ["auth", "session", "restore"],
+    queryFn: restoreSessionFromApi,
+    retry: false,
   });
 }
 
@@ -82,6 +90,7 @@ export function useGoogleSignInMutation() {
       const payload = await signInWithGooglePopup();
       const user = await createSession(payload);
       saveUidToLocalStore(user.uid);
+      saveIdTokenToLocalStore(payload.idToken);
       return user;
     },
   });

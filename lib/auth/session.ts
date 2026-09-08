@@ -3,11 +3,11 @@ import "server-only";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { headers } from "next/headers";
 
-// import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
+import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
 
-// export async function verifyFirebaseIdToken(idToken: string) {
-//   return getFirebaseAdminAuth().verifyIdToken(idToken);
-// }
+export async function verifyFirebaseIdToken(idToken: string) {
+  return getFirebaseAdminAuth().verifyIdToken(idToken);
+}
 
 export async function getAuthenticatedUserFromAuthorizationHeader() {
   const requestHeaders = await headers();
@@ -23,16 +23,17 @@ export async function getAuthenticatedUserFromAuthorizationHeader() {
     return null;
   }
 
-  return {
-    uid: idToken,
-    idToken,
-  };
+  try {
+    const decodedToken = await verifyFirebaseIdToken(idToken);
 
-  // try {
-  //   return await verifyFirebaseIdToken(idToken);
-  // } catch {
-  //   return null;
-  // }
+    return {
+      uid: decodedToken.uid,
+      idToken,
+      decodedToken,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function requireAuthenticatedUser(decodedToken: DecodedIdToken | null) {

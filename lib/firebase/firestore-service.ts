@@ -37,6 +37,36 @@ export type VocabularyItemInput = {
 
 export type PassageStatus = "pending" | "completed" | "error";
 
+export type ParagraphTranslationState =
+  | "missing"
+  | "available"
+  | "generating"
+  | "error";
+
+export type StoredPassageParagraph = {
+  paragraphId: string;
+  index: number;
+  sourceText: string;
+  sourceHash: string;
+  translation?: string;
+  translationState: ParagraphTranslationState;
+  translationError?: string;
+  translationUpdatedAt?: Timestamp;
+  translationOperationId?: string;
+  translationOperationStartedAt?: Timestamp;
+  translationOperationExpiresAt?: Timestamp;
+};
+
+export type PassageParagraphDto = {
+  paragraphId: string;
+  index: number;
+  sourceText: string;
+  translation?: string;
+  translationState: ParagraphTranslationState;
+  translationError?: string;
+  translationUpdatedAt?: string;
+};
+
 export type StoredVocabularyItem = {
   vocabularyId: string;
   uid: string;
@@ -56,6 +86,7 @@ export type PassageHistoryItem = {
   uid: string;
   title: string;
   passage: string;
+  paragraphs?: StoredPassageParagraph[];
   vocabularyList: VocabularyItemInput[];
   previewText: string;
   passageHash: string;
@@ -91,6 +122,7 @@ export type PassageDetailApiItem = {
   recordId: string;
   title: string;
   passage: string;
+  paragraphs: PassageParagraphDto[];
   vocabularyList: VocabularyItemInput[];
   createdAt: string;
   vocabularyCount: number;
@@ -146,6 +178,195 @@ function buildPassagePreview(passage: string, maxLength = 180) {
   return `${trimmed.slice(0, maxLength - 1)}…`;
 }
 
+function normalizeParagraphSourceText(passage: string) {
+  const normalized = passage.replace(/\r\n?/g, "\n").trim();
+
+  if (!normalized) {
+    return [];
+  }
+
+  // If passage contains blank line separations, split by blank lines.
+  if (/\n\s*\n/.test(normalized)) {
+    return normalized
+      .split(/\n\s*\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+  }
+
+  // Otherwise, if passage is delimited by single newlines, split by line breaks.
+  return normalized
+    .split(/\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+function buildParagraphId(index: number, sourceText: string) {
+  return `p-${index}-${hashPassage(sourceText).slice(0, 16)}`;
+}
+
+export function buildPassageParagraphs(
+  passage: string,
+): StoredPassageParagraph[] {
+  return normalizeParagraphSourceText(passage).map((sourceText, index) => ({
+    paragraphId: buildParagraphId(index, sourceText),
+    index,
+    sourceText,
+    sourceHash: hashPassage(sourceText),
+    translationState: "missing" as const,
+  }));
+}
+
+function normalizeStoredParagraph(
+  paragraph: Partial<StoredPassageParagraph>,
+  fallbackIndex: number,
+) {
+  const sourceText = (paragraph.sourceText ?? "").trim();
+
+  if (!sourceText) {
+    return null;
+  }
+
+  const translation = paragraph.translation?.trim();
+  const translationState =
+    paragraph.translationState === "available" && translation
+      ? "available"
+      : paragraph.translationState === "generating"
+        ? "generating"
+        : paragraph.translationState === "error"
+          ? "error"
+          : translation
+            ? "available"
+            : "missing";
+
+  return {
+    paragraphId:
+      paragraph.paragraphId?.trim() ||
+      buildParagraphId(fallbackIndex, sourceText),
+    index: fallbackIndex,
+    sourceText,
+    sourceHash: paragraph.sourceHash ?? hashPassage(sourceText),
+    ...(translation ? { translation } : {}),
+    translationState,
+    ...(paragraph.translationError
+      ? { translationError: paragraph.translationError }
+      : {}),
+    ...(paragraph.translationUpdatedAt
+      ? { translationUpdatedAt: paragraph.translationUpdatedAt }
+      : {}),
+    ...(paragraph.translationOperationId
+      ? { translationOperationId: paragraph.translationOperationId }
+      : {}),
+    ...(paragraph.translationOperationStartedAt
+      ? {
+          translationOperationStartedAt:
+            paragraph.translationOperationStartedAt,
+        }
+      : {}),
+    ...(paragraph.translationOperationExpiresAt
+      ? {
+          translationOperationExpiresAt:
+            paragraph.translationOperationExpiresAt,
+        }
+      : {}),
+  } satisfies StoredPassageParagraph;
+}
+
+function getPassageParagraphs(
+  data: Partial<PassageHistoryItem>,
+  passage: string,
+) {
+  if (Array.isArray(data.paragraphs)) {
+    const normalized = data.paragraphs
+      .map((paragraph, index) => normalizeStoredParagraph(paragraph, index))
+      .filter(
+        (paragraph): paragraph is StoredPassageParagraph => paragraph !== null,
+      )
+      .sort((left, right) => left.index - right.index)
+      .map((paragraph, index) => ({ ...paragraph, index }));
+
+    // If existing stored paragraphs were not split properly (e.g. 1 stored paragraph
+    // containing multiple paragraphs that should have been separated), re-split the passage.
+    const expectedParagraphs = buildPassageParagraphs(passage);
+    const hasUnsplitParagraphs =
+      normalized.length === 1 &&
+      expectedParagraphs.length > 1 &&
+      /\n/.test(normalized[0].sourceText);
+
+    if (!hasUnsplitParagraphs) {
+      return normalized;
+    }
+  }
+
+  return buildPassageParagraphs(passage);
+}
+
+export function toPassageParagraphDto(
+  paragraph: StoredPassageParagraph,
+): PassageParagraphDto {
+  return {
+    paragraphId: paragraph.paragraphId,
+    index: paragraph.index,
+    sourceText: paragraph.sourceText,
+    ...(paragraph.translation ? { translation: paragraph.translation } : {}),
+    translationState: paragraph.translationState,
+    ...(paragraph.translationError
+      ? { translationError: paragraph.translationError }
+      : {}),
+    ...(paragraph.translationUpdatedAt
+      ? {
+          translationUpdatedAt: toDateIsoString(paragraph.translationUpdatedAt),
+        }
+      : {}),
+  };
+}
+
+export const translationOperationLeaseMs = 10 * 60 * 1000;
+
+function withoutTranslationOperation(paragraph: StoredPassageParagraph) {
+  const withoutOperation = { ...paragraph };
+
+  delete withoutOperation.translationOperationId;
+  delete withoutOperation.translationOperationStartedAt;
+  delete withoutOperation.translationOperationExpiresAt;
+
+  return withoutOperation;
+}
+
+function withoutTranslationError(paragraph: StoredPassageParagraph) {
+  const withoutError = { ...paragraph };
+
+  delete withoutError.translationError;
+
+  return withoutError;
+}
+
+function withoutTranslationValue(paragraph: StoredPassageParagraph) {
+  const withoutValue = { ...paragraph };
+
+  delete withoutValue.translation;
+  delete withoutValue.translationUpdatedAt;
+
+  return withoutValue;
+}
+
+function findPassageParagraph(
+  paragraphs: StoredPassageParagraph[],
+  paragraphId: string,
+) {
+  return paragraphs.find((paragraph) => paragraph.paragraphId === paragraphId);
+}
+
+function hasExpiredTranslationOperation(
+  paragraph: StoredPassageParagraph,
+  now: Timestamp,
+) {
+  return Boolean(
+    paragraph.translationState === "generating" &&
+    paragraph.translationOperationExpiresAt &&
+    paragraph.translationOperationExpiresAt.toMillis() <= now.toMillis(),
+  );
+}
+
 function resolvePassageTitle(title: string | undefined, passage: string) {
   const normalized = title?.trim();
 
@@ -181,7 +402,9 @@ function getPassageStatus(data: Partial<PassageHistoryItem>): PassageStatus {
 }
 
 function getPassageVocabularyList(data: Partial<PassageHistoryItem>) {
-  return (data.vocabularyList ?? []).map((item) => normalizeVocabularyItem(item));
+  return (data.vocabularyList ?? []).map((item) =>
+    normalizeVocabularyItem(item),
+  );
 }
 
 function getPassageVocabularyCount(
@@ -291,6 +514,7 @@ export async function recordPassageHistory(params: {
   const normalizedVocabulary = params.vocabulary.map((item) =>
     normalizeVocabularyItem(item),
   );
+  const paragraphs = buildPassageParagraphs(params.passageText);
 
   await getFirebaseAdminFirestore().runTransaction(async (transaction) => {
     transaction.set(
@@ -301,6 +525,7 @@ export async function recordPassageHistory(params: {
         uid: params.uid,
         title: resolvedTitle,
         passage: params.passageText,
+        paragraphs,
         vocabularyList: normalizedVocabulary,
         previewText: buildPassagePreview(params.passageText),
         passageHash: hashPassage(params.passageText),
@@ -337,6 +562,7 @@ export async function createPendingPassage(params: {
   );
   const userRef = getUserDocRef(params.uid);
   const resolvedTitle = resolvePassageTitle(params.title, params.passageText);
+  const paragraphs = buildPassageParagraphs(params.passageText);
 
   await getFirebaseAdminFirestore().runTransaction(async (transaction) => {
     transaction.create(passageRef, {
@@ -345,6 +571,7 @@ export async function createPendingPassage(params: {
       uid: params.uid,
       title: resolvedTitle,
       passage: params.passageText,
+      paragraphs,
       vocabularyList: [],
       previewText: buildPassagePreview(params.passageText),
       passageHash: hashPassage(params.passageText),
@@ -369,6 +596,7 @@ export async function createPendingPassage(params: {
     recordId: params.recordId,
     title: resolvedTitle,
     passage: params.passageText,
+    paragraphs,
     createdAt,
   };
 }
@@ -404,6 +632,7 @@ export async function claimPendingPassage(params: {
       attemptId,
       title: data.title,
       passage: data.passage,
+      paragraphs: getPassageParagraphs(data, data.passage ?? ""),
     };
   });
 }
@@ -426,7 +655,8 @@ export async function completeClaimedPassage(params: {
 
     if (
       !snapshot.exists ||
-      (snapshot.data() as PassageHistoryItem).activeAttemptId !== params.attemptId
+      (snapshot.data() as PassageHistoryItem).activeAttemptId !==
+        params.attemptId
     ) {
       return false;
     }
@@ -459,7 +689,8 @@ export async function failClaimedPassage(params: {
 
     if (
       !snapshot.exists ||
-      (snapshot.data() as PassageHistoryItem).activeAttemptId !== params.attemptId
+      (snapshot.data() as PassageHistoryItem).activeAttemptId !==
+        params.attemptId
     ) {
       return false;
     }
@@ -513,6 +744,354 @@ export async function retryPassageExtraction(params: {
     });
 
     return { recordId: params.recordId, status: "pending" as const };
+  });
+}
+
+export async function saveParagraphTranslation(params: {
+  uid: string;
+  recordId: string;
+  paragraphId: string;
+  translation: string;
+}) {
+  const normalizedTranslation = params.translation.trim();
+
+  if (!normalizedTranslation) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId.trim(),
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      throw new Error("NOT_FOUND");
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+    const paragraphs = getPassageParagraphs(data, data.passage ?? "");
+    const currentParagraph = findPassageParagraph(
+      paragraphs,
+      params.paragraphId,
+    );
+    const now = Timestamp.now();
+
+    if (!currentParagraph) {
+      throw new Error("PARAGRAPH_NOT_FOUND");
+    }
+
+    if (
+      currentParagraph.translationState === "generating" &&
+      !hasExpiredTranslationOperation(currentParagraph, now)
+    ) {
+      throw new Error("TRANSLATION_IN_PROGRESS");
+    }
+
+    const updatedParagraph = {
+      ...withoutTranslationError(withoutTranslationOperation(currentParagraph)),
+      translation: normalizedTranslation,
+      translationState: "available" as const,
+      translationUpdatedAt: now,
+    };
+    const updatedParagraphs = paragraphs.map((paragraph) =>
+      paragraph.paragraphId === params.paragraphId
+        ? updatedParagraph
+        : paragraph,
+    );
+
+    transaction.update(passageRef, {
+      paragraphs: updatedParagraphs,
+      updatedAt: now,
+    });
+
+    return toPassageParagraphDto(updatedParagraph);
+  });
+}
+
+export async function deleteParagraphTranslation(params: {
+  uid: string;
+  recordId: string;
+  paragraphId: string;
+}) {
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId.trim(),
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      throw new Error("NOT_FOUND");
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+    const paragraphs = getPassageParagraphs(data, data.passage ?? "");
+    const currentParagraph = findPassageParagraph(
+      paragraphs,
+      params.paragraphId,
+    );
+    const now = Timestamp.now();
+
+    if (!currentParagraph) {
+      throw new Error("PARAGRAPH_NOT_FOUND");
+    }
+
+    if (
+      currentParagraph.translationState === "generating" &&
+      !hasExpiredTranslationOperation(currentParagraph, now)
+    ) {
+      throw new Error("TRANSLATION_IN_PROGRESS");
+    }
+
+    const updatedParagraph = {
+      ...withoutTranslationValue(
+        withoutTranslationError(withoutTranslationOperation(currentParagraph)),
+      ),
+      translationState: "missing" as const,
+    };
+    const updatedParagraphs = paragraphs.map((paragraph) =>
+      paragraph.paragraphId === params.paragraphId
+        ? updatedParagraph
+        : paragraph,
+    );
+
+    transaction.update(passageRef, {
+      paragraphs: updatedParagraphs,
+      updatedAt: now,
+    });
+
+    return toPassageParagraphDto(updatedParagraph);
+  });
+}
+
+export async function claimParagraphTranslation(params: {
+  uid: string;
+  recordId: string;
+  paragraphId: string;
+}) {
+  const operationId = randomUUID();
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId.trim(),
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      throw new Error("NOT_FOUND");
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+    const paragraphs = getPassageParagraphs(data, data.passage ?? "");
+    const currentParagraph = findPassageParagraph(
+      paragraphs,
+      params.paragraphId,
+    );
+    const now = Timestamp.now();
+
+    if (!currentParagraph) {
+      throw new Error("PARAGRAPH_NOT_FOUND");
+    }
+
+    if (
+      currentParagraph.translationState === "generating" &&
+      !hasExpiredTranslationOperation(currentParagraph, now)
+    ) {
+      throw new Error("TRANSLATION_IN_PROGRESS");
+    }
+
+    const updatedParagraph = {
+      ...withoutTranslationError(withoutTranslationOperation(currentParagraph)),
+      translationState: "generating" as const,
+      translationOperationId: operationId,
+      translationOperationStartedAt: now,
+      translationOperationExpiresAt: Timestamp.fromMillis(
+        now.toMillis() + translationOperationLeaseMs,
+      ),
+    };
+    const updatedParagraphs = paragraphs.map((paragraph) =>
+      paragraph.paragraphId === params.paragraphId
+        ? updatedParagraph
+        : paragraph,
+    );
+
+    transaction.update(passageRef, {
+      paragraphs: updatedParagraphs,
+      updatedAt: now,
+    });
+
+    return {
+      operationId,
+      sourceText: currentParagraph.sourceText,
+      ...(currentParagraph.translation
+        ? { previousTranslation: currentParagraph.translation }
+        : {}),
+    };
+  });
+}
+
+export async function completeParagraphTranslation(params: {
+  uid: string;
+  recordId: string;
+  paragraphId: string;
+  operationId: string;
+  translation: string;
+}) {
+  const normalizedTranslation = params.translation.trim();
+
+  if (!normalizedTranslation) {
+    throw new Error("INVALID_INPUT");
+  }
+
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId.trim(),
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      return false;
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+    const paragraphs = getPassageParagraphs(data, data.passage ?? "");
+    const currentParagraph = findPassageParagraph(
+      paragraphs,
+      params.paragraphId,
+    );
+
+    if (
+      !currentParagraph ||
+      currentParagraph.translationOperationId !== params.operationId
+    ) {
+      return false;
+    }
+
+    const updatedParagraph = {
+      ...withoutTranslationError(withoutTranslationOperation(currentParagraph)),
+      translation: normalizedTranslation,
+      translationState: "available" as const,
+      translationUpdatedAt: Timestamp.now(),
+    };
+    const updatedParagraphs = paragraphs.map((paragraph) =>
+      paragraph.paragraphId === params.paragraphId
+        ? updatedParagraph
+        : paragraph,
+    );
+
+    transaction.update(passageRef, {
+      paragraphs: updatedParagraphs,
+      updatedAt: Timestamp.now(),
+    });
+
+    return toPassageParagraphDto(updatedParagraph);
+  });
+}
+
+export async function failParagraphTranslation(params: {
+  uid: string;
+  recordId: string;
+  paragraphId: string;
+  operationId: string;
+  errorReason: string;
+}) {
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId.trim(),
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      return false;
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+    const paragraphs = getPassageParagraphs(data, data.passage ?? "");
+    const currentParagraph = findPassageParagraph(
+      paragraphs,
+      params.paragraphId,
+    );
+
+    if (
+      !currentParagraph ||
+      currentParagraph.translationOperationId !== params.operationId
+    ) {
+      return false;
+    }
+
+    const updatedParagraph = {
+      ...withoutTranslationOperation(currentParagraph),
+      translationState: "error" as const,
+      translationError:
+        params.errorReason.trim() || "Translation failed. Please retry.",
+    };
+    const updatedParagraphs = paragraphs.map((paragraph) =>
+      paragraph.paragraphId === params.paragraphId
+        ? updatedParagraph
+        : paragraph,
+    );
+
+    transaction.update(passageRef, {
+      paragraphs: updatedParagraphs,
+      updatedAt: Timestamp.now(),
+    });
+
+    return toPassageParagraphDto(updatedParagraph);
+  });
+}
+
+export async function reclaimExpiredParagraphTranslation(params: {
+  uid: string;
+  recordId: string;
+  paragraphId: string;
+}) {
+  const passageRef = getUserPassagesCollectionRef(params.uid).doc(
+    params.recordId.trim(),
+  );
+
+  return getFirebaseAdminFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(passageRef);
+
+    if (!snapshot.exists) {
+      return false;
+    }
+
+    const data = snapshot.data() as PassageHistoryItem;
+    const paragraphs = getPassageParagraphs(data, data.passage ?? "");
+    const currentParagraph = findPassageParagraph(
+      paragraphs,
+      params.paragraphId,
+    );
+    const now = Timestamp.now();
+
+    if (
+      !currentParagraph ||
+      !hasExpiredTranslationOperation(currentParagraph, now)
+    ) {
+      return false;
+    }
+
+    const updatedParagraph = {
+      ...withoutTranslationOperation(currentParagraph),
+      translationState: "error" as const,
+      translationError: "Translation request expired. Please retry.",
+    };
+    const updatedParagraphs = paragraphs.map((paragraph) =>
+      paragraph.paragraphId === params.paragraphId
+        ? updatedParagraph
+        : paragraph,
+    );
+
+    transaction.update(passageRef, {
+      paragraphs: updatedParagraphs,
+      updatedAt: now,
+    });
+
+    return true;
   });
 }
 
@@ -874,11 +1453,25 @@ export async function getPassageDetailByRecordId(params: {
   const passage = data.passage ?? "";
   const status = getPassageStatus(data);
   const vocabularyList = getPassageVocabularyList(data);
+  const paragraphs = getPassageParagraphs(data, passage);
+
+  const shouldUpdateParagraphs =
+    !Array.isArray(data.paragraphs) ||
+    (Array.isArray(data.paragraphs) &&
+      data.paragraphs.length !== paragraphs.length);
+
+  if (shouldUpdateParagraphs) {
+    await snapshot.ref.update({
+      paragraphs,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
 
   return {
     recordId: data.recordId ?? snapshot.id,
     title: resolvePassageTitle(data.title, passage),
     passage,
+    paragraphs: paragraphs.map(toPassageParagraphDto),
     vocabularyList: status === "completed" ? vocabularyList : [],
     createdAt: toDateIsoString(data.createdAt),
     vocabularyCount: getPassageVocabularyCount(status, vocabularyList),

@@ -2,7 +2,10 @@ import { apiError, apiOk } from "@/lib/api/http";
 import { getAuthenticatedUserFromAuthorizationHeader } from "@/lib/auth/session";
 import {
   claimPendingPassage,
+  claimParagraphTranslation,
   completeClaimedPassage,
+  completeParagraphTranslation,
+  failParagraphTranslation,
   failClaimedPassage,
   getPassageDetailByRecordId,
   upsertVocabularyItems,
@@ -10,7 +13,71 @@ import {
 import {
   extractVocabularyFromPassage,
   OpenRouterClientError,
+  translateParagraphToVietnamese,
 } from "@/lib/openrouter/client";
+
+function sanitizeTranslationError(error: unknown) {
+  if (error instanceof OpenRouterClientError) {
+    if (error.code === "OPENROUTER_RATE_LIMITED") {
+      return "Translation provider is currently busy. Please retry shortly.";
+    }
+
+    if (error.code === "OPENROUTER_MISSING_API_KEY") {
+      return "Translation service is not configured. Please try again later.";
+    }
+
+    if (error.code === "OPENROUTER_INVALID_RESPONSE") {
+      return "Translation provider returned an invalid result. Please retry.";
+    }
+  }
+
+  return "Translation provider is currently unavailable. Please retry.";
+}
+
+async function processParagraphTranslations(
+  uid: string,
+  recordId: string,
+  paragraphs: Awaited<
+    ReturnType<typeof claimPendingPassage>
+  > extends infer Claim
+    ? Claim extends { paragraphs: infer Paragraphs }
+      ? Paragraphs
+      : never
+    : never,
+) {
+  for (const paragraph of paragraphs) {
+    const claim = await claimParagraphTranslation({
+      uid,
+      recordId,
+      paragraphId: paragraph.paragraphId,
+    });
+
+    if (!claim) {
+      continue;
+    }
+
+    try {
+      const translation = await translateParagraphToVietnamese(
+        claim.sourceText,
+      );
+      await completeParagraphTranslation({
+        uid,
+        recordId,
+        paragraphId: paragraph.paragraphId,
+        operationId: claim.operationId,
+        translation,
+      });
+    } catch (error) {
+      await failParagraphTranslation({
+        uid,
+        recordId,
+        paragraphId: paragraph.paragraphId,
+        operationId: claim.operationId,
+        errorReason: sanitizeTranslationError(error),
+      });
+    }
+  }
+}
 
 function sanitizeExtractionError(error: unknown) {
   if (error instanceof OpenRouterClientError) {
@@ -39,7 +106,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const recordId = typeof body.recordId === "string" ? body.recordId.trim() : "";
+    const recordId =
+      typeof body.recordId === "string" ? body.recordId.trim() : "";
 
     if (!recordId) {
       return apiError("INVALID_INPUT", "recordId is required", 400);
@@ -68,6 +136,11 @@ export async function POST(request: Request) {
     }
 
     try {
+      const translationPromise = processParagraphTranslations(
+        authenticatedUser.uid,
+        recordId,
+        claim.paragraphs ?? [],
+      );
       const vocabulary = await extractVocabularyFromPassage(claim.passage);
       const finalized = await completeClaimedPassage({
         uid: authenticatedUser.uid,
@@ -83,6 +156,8 @@ export async function POST(request: Request) {
           vocabulary,
         });
       }
+
+      await translationPromise;
 
       return apiOk({
         recordId,

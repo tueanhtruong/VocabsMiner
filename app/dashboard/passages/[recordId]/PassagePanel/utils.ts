@@ -39,6 +39,38 @@ export function buildPassageSegments(
   return nextSegments;
 }
 
+export function buildParagraphSegments(
+  paragraph: string,
+  highlightedRanges: { start: number; end: number }[],
+): PassageSegment[] {
+  const nextSegments: PassageSegment[] = [];
+  let cursor = 0;
+
+  for (const range of highlightedRanges) {
+    if (range.start > cursor) {
+      nextSegments.push({
+        text: paragraph.slice(cursor, range.start),
+        highlighted: false,
+      });
+    }
+
+    nextSegments.push({
+      text: paragraph.slice(range.start, range.end),
+      highlighted: true,
+    });
+    cursor = range.end;
+  }
+
+  if (cursor < paragraph.length) {
+    nextSegments.push({
+      text: paragraph.slice(cursor),
+      highlighted: false,
+    });
+  }
+
+  return nextSegments;
+}
+
 export function extractVietnameseText(payload: unknown): string | null {
   if (!Array.isArray(payload) || !Array.isArray(payload[0])) {
     return null;

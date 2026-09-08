@@ -14,11 +14,20 @@ import { ApiClientError, requestJson } from "@/lib/query-hooks/api-client";
 import { findHighlightRanges } from "@/app/dashboard/passages/[recordId]/highlight-utils";
 import type { VocabularyDraft } from "@/lib/word-actions/types";
 import { useRetryExtractionMutation } from "@/lib/query-hooks/extraction";
+import {
+  useAddParagraphTranslationMutation,
+  useDeleteParagraphTranslationMutation,
+  useEditParagraphTranslationMutation,
+  useGenerateParagraphTranslationMutation,
+  useRegenerateParagraphTranslationMutation,
+  type PassageParagraph,
+} from "@/lib/query-hooks/translations";
 
 type PassageDetailResponse = {
   recordId: string;
   title: string;
   passage: string;
+  paragraphs: PassageParagraph[];
   vocabularyList: DetailVocabularyItem[];
   createdAt: string;
   vocabularyCount: number;
@@ -34,6 +43,50 @@ export default function PassageDetailPage() {
   const [isPassageDrawerOpen, setIsPassageDrawerOpen] = useState(false);
   const [draftSeed, setDraftSeed] = useState<VocabularyDraft | null>(null);
   const retryMutation = useRetryExtractionMutation(params.recordId ?? "");
+  const addParagraphTranslationMutation = useAddParagraphTranslationMutation(
+    params.recordId ?? "",
+  );
+  const editParagraphTranslationMutation = useEditParagraphTranslationMutation(
+    params.recordId ?? "",
+  );
+  const deleteParagraphTranslationMutation =
+    useDeleteParagraphTranslationMutation(params.recordId ?? "");
+  const generateParagraphTranslationMutation =
+    useGenerateParagraphTranslationMutation(params.recordId ?? "");
+  const regenerateParagraphTranslationMutation =
+    useRegenerateParagraphTranslationMutation(params.recordId ?? "");
+
+  const handleSaveParagraphTranslation = async (
+    paragraphId: string,
+    translation: string,
+  ) => {
+    const currentParagraph = detailQuery.data?.paragraphs.find(
+      (paragraph) => paragraph.paragraphId === paragraphId,
+    );
+    const method = currentParagraph?.translation ? "edit" : "add";
+    const mutation =
+      method === "edit"
+        ? editParagraphTranslationMutation
+        : addParagraphTranslationMutation;
+
+    await mutation.mutateAsync({
+      paragraphId,
+      mode: "manual",
+      translation,
+    });
+  };
+
+  const handleDeleteParagraphTranslation = async (paragraphId: string) => {
+    await deleteParagraphTranslationMutation.mutateAsync({ paragraphId });
+  };
+
+  const handleGenerateParagraphTranslation = async (paragraphId: string) => {
+    await generateParagraphTranslationMutation.mutateAsync(paragraphId);
+  };
+
+  const handleRegenerateParagraphTranslation = async (paragraphId: string) => {
+    await regenerateParagraphTranslationMutation.mutateAsync(paragraphId);
+  };
 
   const detailQuery = useQuery({
     queryKey: ["passage-detail", params.recordId],
@@ -46,8 +99,16 @@ export default function PassageDetailPage() {
     },
     enabled: Boolean(params.recordId),
     refetchOnMount: "always",
-    refetchInterval: (query) =>
-      query.state.data?.status === "pending" ? 5000 : false,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+
+      return data?.status === "pending" ||
+        data?.paragraphs.some(
+          (paragraph) => paragraph.translationState === "generating",
+        )
+        ? 5000
+        : false;
+    },
   });
 
   const handleAddVocabulary = async (formData: {
@@ -355,7 +416,7 @@ export default function PassageDetailPage() {
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="hidden lg:block">
           <PassagePanel
-            passage={detailQuery.data.passage}
+            paragraphs={detailQuery.data.paragraphs}
             vocabularyWords={detailQuery.data.vocabularyList.map(
               (item) => item.word,
             )}
@@ -363,6 +424,12 @@ export default function PassageDetailPage() {
             highlightedRanges={highlightedPassage}
             showNoMatch={showNoMatch}
             onGenerateVocabularyDraft={handleGenerateVocabularyDraft}
+            onSaveParagraphTranslation={handleSaveParagraphTranslation}
+            onDeleteParagraphTranslation={handleDeleteParagraphTranslation}
+            onGenerateParagraphTranslation={handleGenerateParagraphTranslation}
+            onRegenerateParagraphTranslation={
+              handleRegenerateParagraphTranslation
+            }
           />
         </div>
 
@@ -415,7 +482,7 @@ export default function PassageDetailPage() {
         onOpenChange={(open) => {
           setIsPassageDrawerOpen(open);
         }}
-        passage={detailQuery.data.passage}
+        paragraphs={detailQuery.data.paragraphs}
         vocabularyWords={detailQuery.data.vocabularyList.map(
           (item) => item.word,
         )}
@@ -423,6 +490,10 @@ export default function PassageDetailPage() {
         highlightedRanges={highlightedPassage}
         showNoMatch={showNoMatch}
         onGenerateVocabularyDraft={handleGenerateVocabularyDraft}
+        onSaveParagraphTranslation={handleSaveParagraphTranslation}
+        onDeleteParagraphTranslation={handleDeleteParagraphTranslation}
+        onGenerateParagraphTranslation={handleGenerateParagraphTranslation}
+        onRegenerateParagraphTranslation={handleRegenerateParagraphTranslation}
         title={detailQuery.data.title}
       />
 

@@ -1,9 +1,7 @@
 <!-- SPECKIT START -->
-
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/004-background-vocabulary-extraction/plan.md
-
+at specs/005-paragraph-vietnamese-translation/plan.md
 <!-- SPECKIT END -->
 
 ## Git Commit Message Convention

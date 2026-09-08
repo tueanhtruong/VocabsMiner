@@ -1,12 +1,18 @@
 import { apiError, apiOk } from "@/lib/api/http";
+import { getAuthenticatedUserFromAuthorizationHeader } from "@/lib/auth/session";
 import {
   getLearnerProfileByUid,
   upsertLearnerProfile,
 } from "@/lib/firebase/firestore-service";
 
 export async function POST(request: Request) {
+  const authenticatedUser = await getAuthenticatedUserFromAuthorizationHeader();
+
+  if (!authenticatedUser) {
+    return apiError("UNAUTHORIZED", "Invalid authentication token", 401);
+  }
+
   const body = (await request.json().catch(() => null)) as {
-    idToken?: string;
     uid?: string;
     displayName?: string;
     email?: string;
@@ -14,8 +20,8 @@ export async function POST(request: Request) {
   } | null;
 
   try {
-    if (!body?.uid?.trim()) {
-      return apiError("INVALID_INPUT", "uid is required", 400);
+    if (body?.uid?.trim() && body.uid.trim() !== authenticatedUser.uid) {
+      return apiError("FORBIDDEN", "Authenticated user mismatch", 403);
     }
 
     const displayName = body?.displayName?.trim() || undefined;
@@ -23,7 +29,7 @@ export async function POST(request: Request) {
     const photoUrl = body?.photoUrl?.trim() || undefined;
 
     const payload = {
-      uid: body.uid.trim(),
+      uid: authenticatedUser.uid,
       displayName,
       email,
       photoUrl,
@@ -41,14 +47,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
-  const uid = new URL(request.url).searchParams.get("uid")?.trim();
+export async function GET() {
+  const authenticatedUser = await getAuthenticatedUserFromAuthorizationHeader();
 
-  if (!uid) {
-    return apiError("INVALID_INPUT", "uid is required", 400);
+  if (!authenticatedUser) {
+    return apiError("UNAUTHORIZED", "Invalid authentication token", 401);
   }
 
-  const profile = await getLearnerProfileByUid(uid);
+  const profile = await getLearnerProfileByUid(authenticatedUser.uid);
 
   if (!profile) {
     return apiError("NOT_FOUND", "User not found", 404);
