@@ -27,11 +27,13 @@ export type ExtractionResponse = {
   resultCount: number;
   saved: boolean;
   createdAt: string;
+  pendingSince: string;
 };
 
 export type RetryExtractionResponse = {
   recordId: string;
   status: "pending";
+  pendingSince: string;
 };
 
 export function useExtractVocabularyMutation() {

@@ -92,6 +92,7 @@ export type PassageHistoryItem = {
   passageHash: string;
   vocabularyCount: number;
   status: PassageStatus;
+  pendingSince?: Timestamp;
   errorReason?: string;
   activeAttemptId?: string;
   createdAt: Timestamp;
@@ -127,6 +128,7 @@ export type PassageDetailApiItem = {
   createdAt: string;
   vocabularyCount: number;
   status: PassageStatus;
+  pendingSince?: string;
   errorReason?: string;
 };
 
@@ -135,6 +137,7 @@ const maxVocabularyLimit = 1000;
 
 const defaultHistoryLimit = 500;
 const maxHistoryLimit = 1000;
+export const staleExtractionThresholdMs = 15 * 60 * 1000;
 
 export function getUserDocRef(uid: string) {
   return getFirebaseAdminFirestore().collection("users").doc(uid);
@@ -150,6 +153,34 @@ export function getUserVocabularyCollectionRef(uid: string) {
 
 function toDateIsoString(value: Timestamp | undefined) {
   return (value ?? Timestamp.now()).toDate().toISOString();
+}
+
+function isValidTimestamp(value: Timestamp | undefined): value is Timestamp {
+  return value instanceof Timestamp && Number.isFinite(value.toMillis());
+}
+
+export function getPendingSince(data: Partial<PassageHistoryItem>) {
+  if (isValidTimestamp(data.pendingSince)) {
+    return data.pendingSince;
+  }
+
+  return isValidTimestamp(data.createdAt) ? data.createdAt : undefined;
+}
+
+export function isStalePendingPassage(
+  data: Partial<PassageHistoryItem>,
+  now = Timestamp.now(),
+) {
+  if (getPassageStatus(data) !== "pending") {
+    return false;
+  }
+
+  const pendingSince = getPendingSince(data);
+
+  return (
+    pendingSince !== undefined &&
+    now.toMillis() - pendingSince.toMillis() > staleExtractionThresholdMs
+  );
 }
 
 function normalizeWord(word: string) {
@@ -577,6 +608,7 @@ export async function createPendingPassage(params: {
       passageHash: hashPassage(params.passageText),
       vocabularyCount: 0,
       status: "pending",
+      pendingSince: createdAt,
       createdAt,
       updatedAt: createdAt,
     });
@@ -598,6 +630,7 @@ export async function createPendingPassage(params: {
     passage: params.passageText,
     paragraphs,
     createdAt,
+    pendingSince: createdAt,
   };
 }
 
@@ -623,9 +656,12 @@ export async function claimPendingPassage(params: {
       return null;
     }
 
+    const now = Timestamp.now();
+
     transaction.update(passageRef, {
       activeAttemptId: attemptId,
-      updatedAt: Timestamp.now(),
+      pendingSince: getPendingSince(data) ?? now,
+      updatedAt: now,
     });
 
     return {
@@ -666,6 +702,7 @@ export async function completeClaimedPassage(params: {
       vocabularyCount: vocabularyList.length,
       status: "completed",
       updatedAt: Timestamp.now(),
+      pendingSince: FieldValue.delete(),
       activeAttemptId: FieldValue.delete(),
       errorReason: FieldValue.delete(),
     });
@@ -701,6 +738,7 @@ export async function failClaimedPassage(params: {
       status: "error",
       errorReason: params.errorReason,
       updatedAt: Timestamp.now(),
+      pendingSince: FieldValue.delete(),
       activeAttemptId: FieldValue.delete(),
     });
 
@@ -725,25 +763,31 @@ export async function retryPassageExtraction(params: {
 
     const data = snapshot.data() as PassageHistoryItem;
     const status = getPassageStatus(data);
+    const now = Timestamp.now();
 
-    if (status === "pending") {
-      return { recordId: params.recordId, status: "pending" as const };
+    if (status === "pending" && !isStalePendingPassage(data, now)) {
+      throw new Error("RETRY_NOT_AVAILABLE");
     }
 
-    if (status !== "error") {
-      throw new Error("INVALID_INPUT");
+    if (status !== "pending" && status !== "error") {
+      throw new Error("RETRY_NOT_AVAILABLE");
     }
 
     transaction.update(passageRef, {
       vocabularyList: [],
       vocabularyCount: 0,
       status: "pending",
-      updatedAt: Timestamp.now(),
+      pendingSince: now,
+      updatedAt: now,
       activeAttemptId: FieldValue.delete(),
       errorReason: FieldValue.delete(),
     });
 
-    return { recordId: params.recordId, status: "pending" as const };
+    return {
+      recordId: params.recordId,
+      status: "pending" as const,
+      pendingSince: now,
+    };
   });
 }
 
@@ -1454,6 +1498,7 @@ export async function getPassageDetailByRecordId(params: {
   const status = getPassageStatus(data);
   const vocabularyList = getPassageVocabularyList(data);
   const paragraphs = getPassageParagraphs(data, passage);
+  const pendingSince = getPendingSince(data);
 
   const shouldUpdateParagraphs =
     !Array.isArray(data.paragraphs) ||
@@ -1476,6 +1521,9 @@ export async function getPassageDetailByRecordId(params: {
     createdAt: toDateIsoString(data.createdAt),
     vocabularyCount: getPassageVocabularyCount(status, vocabularyList),
     status,
+    ...(status === "pending" && pendingSince
+      ? { pendingSince: pendingSince.toDate().toISOString() }
+      : {}),
     ...(status === "error" && data.errorReason
       ? { errorReason: data.errorReason }
       : {}),

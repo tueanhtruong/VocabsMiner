@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       resultCount: 0,
       saved: true,
       createdAt: createdAt.toDate().toISOString(),
+      pendingSince: savedPassage.pendingSince.toDate().toISOString(),
     });
   } catch (error) {
     console.error("Extraction error:", error);

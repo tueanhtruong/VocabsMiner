@@ -23,6 +23,8 @@ import {
   type PassageParagraph,
 } from "@/lib/query-hooks/translations";
 
+const staleExtractionThresholdMs = 15 * 60 * 1000;
+
 type PassageDetailResponse = {
   recordId: string;
   title: string;
@@ -32,8 +34,25 @@ type PassageDetailResponse = {
   createdAt: string;
   vocabularyCount: number;
   status: "pending" | "completed" | "error";
+  pendingSince?: string;
   errorReason?: string;
 };
+
+function isStalePendingExtraction(
+  status: PassageDetailResponse["status"],
+  pendingSince?: string,
+) {
+  if (status !== "pending" || !pendingSince) {
+    return false;
+  }
+
+  const pendingTimestamp = Date.parse(pendingSince);
+
+  return (
+    Number.isFinite(pendingTimestamp) &&
+    Date.now() - pendingTimestamp > staleExtractionThresholdMs
+  );
+}
 
 export default function PassageDetailPage() {
   const router = useRouter();
@@ -344,6 +363,10 @@ export default function PassageDetailPage() {
 
   const isCompleted = detailQuery.data.status === "completed";
   const isPending = detailQuery.data.status === "pending";
+  const isStalePending = isStalePendingExtraction(
+    detailQuery.data.status,
+    detailQuery.data.pendingSince,
+  );
 
   return (
     <main className="mx-auto flex w-full max-w-[100rem] flex-1 flex-col gap-6 px-6 py-10">
@@ -383,6 +406,25 @@ export default function PassageDetailPage() {
             You can leave this page. It will refresh automatically while the
             background worker processes your saved passage.
           </p>
+          {isStalePending ? (
+            <>
+              <button
+                type="button"
+                onClick={() => retryMutation.mutate()}
+                disabled={retryMutation.isPending}
+                className="mt-3 rounded-lg bg-amber-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {retryMutation.isPending ? "Retrying..." : "Retry"}
+              </button>
+              {retryMutation.error ? (
+                <p className="mt-2 text-sm text-red-700">
+                  {retryMutation.error instanceof ApiClientError
+                    ? retryMutation.error.message
+                    : "Unable to retry extraction."}
+                </p>
+              ) : null}
+            </>
+          ) : null}
         </section>
       ) : null}
 

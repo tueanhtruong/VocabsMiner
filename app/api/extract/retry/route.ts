@@ -12,7 +12,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const recordId = typeof body.recordId === "string" ? body.recordId.trim() : "";
+    const recordId =
+      typeof body.recordId === "string" ? body.recordId.trim() : "";
 
     if (!recordId) {
       return apiError("INVALID_INPUT", "recordId is required", 400);
@@ -29,7 +30,10 @@ export async function POST(request: Request) {
       idToken: authenticatedUser.idToken,
     });
 
-    return apiOk(result);
+    return apiOk({
+      ...result,
+      pendingSince: result.pendingSince.toDate().toISOString(),
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "NOT_FOUND") {
       return apiError("NOT_FOUND", "Passage record was not found", 404);
@@ -38,7 +42,15 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message === "INVALID_INPUT") {
       return apiError(
         "INVALID_INPUT",
-        "Only failed extractions can be retried",
+        "Only failed or stale pending extractions can be retried",
+        400,
+      );
+    }
+
+    if (error instanceof Error && error.message === "RETRY_NOT_AVAILABLE") {
+      return apiError(
+        "RETRY_NOT_AVAILABLE",
+        "This extraction is not eligible for retry",
         400,
       );
     }

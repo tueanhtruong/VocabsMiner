@@ -24,6 +24,8 @@ type PassageRecord = {
   passage: string;
   paragraphs?: PassageParagraph[];
   status?: "pending" | "completed" | "error";
+  pendingSince?: Timestamp;
+  createdAt?: Timestamp;
   activeAttemptId?: string;
 };
 
@@ -45,6 +47,18 @@ type VocabularyDocument = {
   occurrenceCount?: number;
   passageRefs?: string[];
 };
+
+function getPendingSince(data: PassageRecord) {
+  if (data.pendingSince instanceof Timestamp) {
+    return data.pendingSince;
+  }
+
+  if (data.createdAt instanceof Timestamp) {
+    return data.createdAt;
+  }
+
+  return undefined;
+}
 
 type OpenRouterErrorCode =
   | "MISSING_API_KEY"
@@ -650,6 +664,7 @@ async function claimPassage(uid: string, recordId: string) {
 
     transaction.update(passageRef, {
       activeAttemptId: attemptId,
+      pendingSince: getPendingSince(data) ?? Timestamp.now(),
       paragraphs,
       updatedAt: Timestamp.now(),
     });
@@ -766,6 +781,7 @@ async function finalizeSuccess(
       vocabularyCount: vocabulary.length,
       status: "completed",
       updatedAt: Timestamp.now(),
+      pendingSince: FieldValue.delete(),
       activeAttemptId: FieldValue.delete(),
       errorReason: FieldValue.delete(),
     });
@@ -807,6 +823,7 @@ async function finalizeFailure(
       status: "error",
       errorReason,
       updatedAt: Timestamp.now(),
+      pendingSince: FieldValue.delete(),
       activeAttemptId: FieldValue.delete(),
     });
 
