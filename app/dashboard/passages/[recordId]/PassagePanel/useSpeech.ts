@@ -1,15 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
-type DictionaryPhonetic = {
-  text?: string;
-  audio?: string;
-};
-
-type DictionaryEntry = {
-  word: string;
-  phonetic?: string;
-  phonetics?: DictionaryPhonetic[];
-};
+import { requestJson } from "@/lib/query-hooks/api-client";
 
 export type WordPronunciation = {
   phonetic: string | null;
@@ -24,10 +15,6 @@ const EMPTY_PRONUNCIATION: WordPronunciation = {
 // Module-level cache so repeated lookups (e.g. the same word in multiple
 // places) don't hit the network more than once per session.
 const pronunciationCache = new Map<string, WordPronunciation>();
-
-function normalizeAudioUrl(url: string): string {
-  return url.startsWith("//") ? `https:${url}` : url;
-}
 
 // The voice list can load asynchronously, so resolve once it's populated.
 function getVoices(): Promise<SpeechSynthesisVoice[]> {
@@ -100,31 +87,17 @@ async function fetchPronunciation(word: string): Promise<WordPronunciation> {
   }
 
   try {
-    const response = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
-        key,
-      )}`,
+    const url = new URL(
+      "/api/word-actions/pronunciation",
+      window.location.origin,
+    );
+    url.searchParams.set("word", key);
+
+    const response = await requestJson<{ pronunciation: WordPronunciation }>(
+      url.toString(),
     );
 
-    if (!response.ok) {
-      pronunciationCache.set(key, EMPTY_PRONUNCIATION);
-      return EMPTY_PRONUNCIATION;
-    }
-
-    const data: DictionaryEntry[] = await response.json();
-    const entry = data?.[0];
-    const phoneticEntries = entry?.phonetics ?? [];
-
-    const rawAudio = phoneticEntries.find((item) => item.audio)?.audio ?? null;
-    const phonetic =
-      entry?.phonetic ??
-      phoneticEntries.find((item) => item.text)?.text ??
-      null;
-
-    const result: WordPronunciation = {
-      phonetic,
-      audioUrl: rawAudio ? normalizeAudioUrl(rawAudio) : null,
-    };
+    const result = response.pronunciation;
 
     pronunciationCache.set(key, result);
     return result;

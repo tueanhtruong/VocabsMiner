@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { extractVietnameseText } from "./utils";
+import { requestJson } from "@/lib/query-hooks/api-client";
 
 type UseWordTranslationResult = {
   translation: string | null;
@@ -42,34 +42,22 @@ export function useWordTranslation(
       });
 
       try {
-        const url = new URL(
-          "https://translate.googleapis.com/translate_a/single",
+        const response = await requestJson<{ vietnamese: string }>(
+          "/api/word-actions/translate",
+          {
+            method: "POST",
+            signal: controller.signal,
+            body: JSON.stringify({ selectedWord: word }),
+          },
         );
-        url.searchParams.set("client", "gtx");
-        url.searchParams.set("sl", "auto");
-        url.searchParams.set("tl", "vi");
-        url.searchParams.set("dt", "t");
-        url.searchParams.set("q", word);
 
-        const response = await fetch(url.toString(), {
-          method: "GET",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error("Unable to translate.");
-        }
-
-        const payload = (await response.json()) as unknown;
-        const vietnamese = extractVietnameseText(payload);
-
-        if (!vietnamese) {
+        if (!response.vietnamese.trim()) {
           throw new Error("Translation returned no text.");
         }
 
         setState({
           word,
-          translation: vietnamese,
+          translation: response.vietnamese,
           translationError: null,
           isTranslating: false,
         });
