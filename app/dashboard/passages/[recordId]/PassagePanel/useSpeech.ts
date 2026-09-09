@@ -170,20 +170,20 @@ export function useSpeech() {
 
   const speak = useCallback(
     async (word: string) => {
-      // const { audioUrl } = await fetchPronunciation(word);
+      const { audioUrl } = await fetchPronunciation(word);
 
-      // if (audioUrl) {
-      //   audioRef.current?.pause();
-      //   const audio = new Audio(audioUrl);
-      //   audioRef.current = audio;
+      if (audioUrl) {
+        audioRef.current?.pause();
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
 
-      //   try {
-      //     await audio.play();
-      //     return;
-      //   } catch {
-      //     // Autoplay blocked or load failed — fall back to synthesized speech.
-      //   }
-      // }
+        try {
+          await audio.play();
+          return;
+        } catch {
+          // Autoplay blocked or load failed — fall back to synthesized speech.
+        }
+      }
 
       fallbackSpeak(word);
     },

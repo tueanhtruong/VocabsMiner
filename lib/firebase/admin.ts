@@ -12,7 +12,9 @@ function getFirebaseAdminPrivateKey() {
   return privateKey.replace(/\\n/g, "\n");
 }
 
-let fireStore: Firestore;
+const globalForFirebaseAdmin = globalThis as typeof globalThis & {
+  fireStore?: Firestore;
+};
 
 export function getFirebaseAdminApp(): App {
   if (getApps().length) {
@@ -33,9 +35,19 @@ export function getFirebaseAdminAuth(): Auth {
 }
 
 export function getFirebaseAdminFirestore(): Firestore {
-  if (!fireStore) {
-    fireStore = getFirestore(getFirebaseAdminApp());
-    fireStore.settings({ ignoreUndefinedProperties: true });
+  if (!globalForFirebaseAdmin.fireStore) {
+    const fireStore = getFirestore(getFirebaseAdminApp());
+    try {
+      fireStore.settings({ ignoreUndefinedProperties: true });
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !error.message.includes("Firestore has already been initialized")
+      ) {
+        throw error;
+      }
+    }
+    globalForFirebaseAdmin.fireStore = fireStore;
   }
-  return fireStore;
+  return globalForFirebaseAdmin.fireStore;
 }
